@@ -30,6 +30,12 @@ async def _startup() -> None:
     except Exception as exc:
         logger.warning("MinIO bucket init failed (non-fatal): %s", exc)
     await ensure_index()
+    if settings.app_env == "development":
+        try:
+            from app.core.seed_dev import seed as seed_dev
+            await seed_dev()
+        except Exception as exc:
+            logger.warning("Dev seed failed (non-fatal): %s", exc)
 
 
 @asynccontextmanager
