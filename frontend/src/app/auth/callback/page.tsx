@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { api } from '@/lib/api'
 
 function Spinner() {
@@ -20,9 +21,9 @@ function ErrorMessage({ message }: { message: string }) {
       <div style={{ fontSize: 36 }}>⚠️</div>
       <div style={{ fontWeight: 700, fontSize: 18 }}>Sign-in failed</div>
       <div style={{ fontSize: 13, color: 'var(--ink2)', maxWidth: 420, textAlign: 'center', lineHeight: 1.6 }}>{message}</div>
-      <a href="/" style={{ marginTop: 8, padding: '10px 22px', borderRadius: 9, background: 'var(--primary)', color: '#fff', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+      <Link href="/" style={{ marginTop: 8, padding: '10px 22px', borderRadius: 9, background: 'var(--primary)', color: '#fff', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
         Back to home
-      </a>
+      </Link>
     </div>
   )
 }
