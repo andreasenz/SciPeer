@@ -13,6 +13,15 @@ Move to **Done** with a completion date when finished.
 - [x] 2026-06-08 — BUG-4: Review page gates submission on COI check; conflict/unauthenticated banners shown
 - [x] 2026-06-08 — BUG-5: Review submission UI: score selector + mandatory/suggested comment drafting with pending queue, real POST to backend
 - [x] 2026-06-08 — BUG-6: All pages load real data from backend (feed, my-papers, my-reviews); added GET /papers/my and GET /reviews/my endpoints
+- [x] 2026-06-08 — BUG-7: PDF presigned URL SignatureDoesNotMatch — separate public boto3 client signs with public hostname, no URL rewriting
+- [x] 2026-06-08 — BUG-8: COI conflict never triggers — ensure_coi_for_real_user() called on every ORCID login in dev mode
+- [x] 2026-06-08 — BUG-9: Co-authors on paper submission — CoauthorIn schema, ORCID lookup/create, co-author panel with name+ORCID inputs
+- [x] 2026-06-08 — BUG-10: Papers under review show author names — blind review: hide author_names for UNDER_REVIEW/REVISION_REQUESTED in PaperCard
+- [x] 2026-06-08 — BUG-11: PDF iframe didn't fill box height — added flex:1 + position:relative to .ms-body
+- [x] 2026-06-08 — BUG-12: Review submission loads existing score and shows "Update Review" if already reviewed; backend already upserts
+- [x] 2026-06-08 — BUG-13: Upvote/downvote double-count fixed — use DB counts directly from API response
+- [x] 2026-06-08 — FEAT: PDF annotation overlay — annotate mode toggle, click-to-annotate on PDF, numbered markers, saved to reviews.annotations table (migration 0002)
+- [x] 2026-06-08 — FEAT: Global toast notifications — ToastProvider in layout, success/error/info toasts on all actions
 
 ---
 

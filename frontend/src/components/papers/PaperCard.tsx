@@ -30,7 +30,11 @@ export default function PaperCard({ paper }: PaperCardProps) {
       </div>
 
       <h3 className="card-title serif">{paper.title}</h3>
-      {paper.authors && <div className="card-auth">{paper.authors}</div>}
+      {paper.status !== 'UNDER_REVIEW' && paper.status !== 'REVISION_REQUESTED' &&
+        paper.author_names && paper.author_names.length > 0 && (
+          <div className="card-auth">{paper.author_names.join(', ')}</div>
+        )
+      }
 
       {paper.abstract && (
         <p className="card-abs">

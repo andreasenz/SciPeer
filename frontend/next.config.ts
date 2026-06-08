@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '*.orcid.org' },
     ],
   },
+  webpack: (config) => {
+    // react-pdf / pdfjs-dist: disable the canvas package (not needed in browser)
+    config.resolve.alias.canvas = false
+    return config
+  },
 }
 
 export default nextConfig

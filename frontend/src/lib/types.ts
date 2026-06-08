@@ -17,8 +17,8 @@ export interface Paper {
   source_url: string | null
   created_at: string
   updated_at: string
+  author_names?: string[]  // from backend; hidden for UNDER_REVIEW (blind review)
   // enriched client-side
-  authors?: string
   score?: number
   review_count?: number
   field_name?: string
@@ -79,4 +79,15 @@ export interface TokenResponse {
 export interface COICheckResult {
   has_conflict: boolean
   candidate_reviewer_id: string
+}
+
+export interface PdfAnnotation {
+  id: string
+  submission_id: string
+  reviewer_id: string
+  reviewer_name: string
+  quoted_text: string | null
+  page_num: number | null
+  body: string
+  created_at: string
 }

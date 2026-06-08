@@ -15,10 +15,16 @@ class FieldCategoryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CoauthorIn(BaseModel):
+    orcid_id: str | None = None
+    display_name: str
+
+
 class SubmissionIn(BaseModel):
     title: str
     abstract: str
     field_category_id: UUID
+    coauthors: list[CoauthorIn] = []
 
 
 class SubmissionOut(BaseModel):
@@ -31,5 +37,6 @@ class SubmissionOut(BaseModel):
     source_url: str | None
     created_at: datetime
     updated_at: datetime
+    author_names: list[str] = []
 
     model_config = {"from_attributes": True}

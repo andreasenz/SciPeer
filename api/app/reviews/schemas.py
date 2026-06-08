@@ -40,3 +40,26 @@ class CommentOut(BaseModel):
 class COICheckOut(BaseModel):
     has_conflict: bool
     candidate_reviewer_id: UUID
+
+
+class AnnotationIn(BaseModel):
+    quoted_text: str | None = Field(default=None, max_length=4000)
+    page_num: int | None = Field(default=None, ge=1)
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class AnnotationEditIn(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class AnnotationOut(BaseModel):
+    id: UUID
+    submission_id: UUID
+    reviewer_id: UUID
+    reviewer_name: str = ""
+    quoted_text: str | None
+    page_num: int | None
+    body: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

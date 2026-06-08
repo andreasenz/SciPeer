@@ -40,7 +40,12 @@ export const api = {
       request<import('./types').Paper[]>(`/api/v1/papers${status ? `?status=${status}` : ''}`),
     my: () => request<import('./types').Paper[]>('/api/v1/papers/my'),
     get: (id: string) => request<import('./types').Paper>(`/api/v1/papers/${id}`),
-    create: (body: { title: string; abstract: string; field_category_id: string }) =>
+    create: (body: {
+      title: string
+      abstract: string
+      field_category_id: string
+      coauthors?: { orcid_id: string | null; display_name: string }[]
+    }) =>
       request<import('./types').Paper>('/api/v1/papers', { method: 'POST', body: JSON.stringify(body) }),
     uploadPdf: (paperId: string, file: File): Promise<import('./types').Paper> => {
       const form = new FormData()
@@ -94,6 +99,20 @@ export const api = {
         `/api/v1/reviews/comments/${commentId}/resolve`,
         { method: 'PATCH' }
       ),
+    getAnnotations: (paperId: string) =>
+      request<import('./types').PdfAnnotation[]>(`/api/v1/reviews/${paperId}/annotations`),
+    addAnnotation: (paperId: string, quoted_text: string | null, page_num: number | null, body: string) =>
+      request<import('./types').PdfAnnotation>(`/api/v1/reviews/${paperId}/annotations`, {
+        method: 'POST',
+        body: JSON.stringify({ quoted_text, page_num, body }),
+      }),
+    editAnnotation: (annotationId: string, body: string) =>
+      request<import('./types').PdfAnnotation>(`/api/v1/reviews/annotations/${annotationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ body }),
+      }),
+    deleteAnnotation: (annotationId: string) =>
+      request<void>(`/api/v1/reviews/annotations/${annotationId}`, { method: 'DELETE' }),
   },
 
   gamification: {

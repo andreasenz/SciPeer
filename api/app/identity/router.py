@@ -42,6 +42,13 @@ async def orcid_callback(payload: OrcidCallbackIn, session: DBSession) -> TokenO
 
     user = await service.get_or_create_user(session, orcid_id, display_name, email=None)
 
+    if settings.app_env == "development":
+        try:
+            from app.core.seed_dev import ensure_coi_for_real_user
+            await ensure_coi_for_real_user(user.id)
+        except Exception as exc:
+            logger.warning("dev COI edge failed (non-fatal): %s", exc)
+
     # Background: sync coauthor graph (non-blocking, errors are logged)
     import asyncio
     asyncio.create_task(service.sync_coauthor_graph(session, user))

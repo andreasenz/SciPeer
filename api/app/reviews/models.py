@@ -52,3 +52,15 @@ class ReviewComment(UUIDBase):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class PdfAnnotation(UUIDBase):
+    __tablename__ = "annotations"
+    __table_args__ = {"schema": "reviews"}
+
+    submission_id: Mapped[UUID] = mapped_column(ForeignKey("papers.submissions.id"), nullable=False)
+    reviewer_id: Mapped[UUID] = mapped_column(ForeignKey("identity.users.id"), nullable=False)
+    quoted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    page_num: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

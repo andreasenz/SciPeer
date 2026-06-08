@@ -6,6 +6,9 @@ from sqlalchemy import select
 from app.core.deps import CurrentUserID, DBSession, ReadDBSession
 from app.reviews import service
 from app.reviews.schemas import (
+    AnnotationEditIn,
+    AnnotationIn,
+    AnnotationOut,
     COICheckOut,
     CommentIn,
     CommentOut,
@@ -86,9 +89,22 @@ async def submit_score(
     score = await service.submit_score(
         session, submission_id=paper_id, reviewer_id=user_id, raw_score=body.raw_score
     )
-    await gami.award_xp(session, user_id, "review_submitted")
-    await emit_review_submitted(str(paper_id), str(user_id), body.raw_score)
-    await papers_svc.check_and_apply_acceptance(session, paper_id)
+    # Side-effects are non-blocking: if Redis or gamification is unavailable the
+    # score is already committed; we log and continue rather than roll back.
+    import logging
+    _log = logging.getLogger(__name__)
+    try:
+        await gami.award_xp(session, user_id, "review_submitted")
+    except Exception as exc:
+        _log.warning("award_xp failed (non-fatal): %s", exc)
+    try:
+        await emit_review_submitted(str(paper_id), str(user_id), body.raw_score)
+    except Exception as exc:
+        _log.warning("emit_review_submitted failed (non-fatal): %s", exc)
+    try:
+        await papers_svc.check_and_apply_acceptance(session, paper_id)
+    except Exception as exc:
+        _log.warning("check_and_apply_acceptance failed (non-fatal): %s", exc)
     return ScoreOut.model_validate(score)
 
 
@@ -139,3 +155,83 @@ async def resolve_comment(comment_id: UUID, user_id: CurrentUserID, session: DBS
     if comment is None:
         raise HTTPException(status_code=404, detail="Comment not found")
     return CommentOut.model_validate(comment)
+
+
+# ── PDF annotations ───────────────────────────────────────────────────────────
+
+@router.get("/{paper_id}/annotations", response_model=list[AnnotationOut])
+async def list_annotations(paper_id: UUID, session: ReadDBSession) -> list[AnnotationOut]:
+    rows = await service.get_annotations_with_reviewer(session, paper_id)
+    return [
+        AnnotationOut.model_validate(ann).model_copy(update={"reviewer_name": name})
+        for ann, name in rows
+    ]
+
+
+@router.post("/{paper_id}/annotations", response_model=AnnotationOut, status_code=status.HTTP_201_CREATED)
+async def add_annotation(
+    paper_id: UUID,
+    body: AnnotationIn,
+    user_id: CurrentUserID,
+    session: DBSession,
+) -> AnnotationOut:
+    from app.papers.models import Submission, SubmissionAuthor
+    paper = await session.get(Submission, paper_id)
+    if paper is None:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    is_author = (
+        await session.execute(
+            select(SubmissionAuthor).where(
+                SubmissionAuthor.submission_id == paper_id,
+                SubmissionAuthor.user_id == user_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if is_author is not None:
+        raise HTTPException(status_code=403, detail="Authors cannot annotate their own paper")
+    annotation = await service.create_annotation(
+        session,
+        submission_id=paper_id,
+        reviewer_id=user_id,
+        quoted_text=body.quoted_text,
+        page_num=body.page_num,
+        body=body.body,
+    )
+    # Fetch reviewer name for response
+    from app.identity.models import User
+    user_obj = await session.get(User, user_id)
+    reviewer_name = user_obj.display_name if user_obj else ""
+    return AnnotationOut.model_validate(annotation).model_copy(update={"reviewer_name": reviewer_name})
+
+
+@router.patch("/annotations/{annotation_id}", response_model=AnnotationOut)
+async def edit_annotation(
+    annotation_id: UUID,
+    body: AnnotationEditIn,
+    user_id: CurrentUserID,
+    session: DBSession,
+) -> AnnotationOut:
+    annotation = await service.get_annotation(session, annotation_id)
+    if annotation is None:
+        raise HTTPException(status_code=404, detail="Annotation not found")
+    if annotation.reviewer_id != user_id:
+        raise HTTPException(status_code=403, detail="You can only edit your own annotations")
+    updated = await service.edit_annotation(session, annotation_id, body.body)
+    from app.identity.models import User
+    user_obj = await session.get(User, user_id)
+    reviewer_name = user_obj.display_name if user_obj else ""
+    return AnnotationOut.model_validate(updated).model_copy(update={"reviewer_name": reviewer_name})
+
+
+@router.delete("/annotations/{annotation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_annotation(
+    annotation_id: UUID,
+    user_id: CurrentUserID,
+    session: DBSession,
+) -> None:
+    annotation = await service.get_annotation(session, annotation_id)
+    if annotation is None:
+        raise HTTPException(status_code=404, detail="Annotation not found")
+    if annotation.reviewer_id != user_id:
+        raise HTTPException(status_code=403, detail="You can only delete your own annotations")
+    await service.delete_annotation(session, annotation_id)

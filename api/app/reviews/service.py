@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.reviews.models import CoauthorEdge, ReviewComment, ReviewScore
+from app.reviews.models import CoauthorEdge, PdfAnnotation, ReviewComment, ReviewScore
 
 
 # ── COI ───────────────────────────────────────────────────────────────────────
@@ -178,3 +178,67 @@ async def get_scores_by_reviewer(session: AsyncSession, reviewer_id: UUID) -> li
         .order_by(ReviewScore.submitted_at.desc())
     )
     return list(result.scalars().all())
+
+
+# ── PDF annotations ───────────────────────────────────────────────────────────
+
+async def get_annotations_with_reviewer(
+    session: AsyncSession, submission_id: UUID
+) -> list[tuple[PdfAnnotation, str]]:
+    """Returns (annotation, reviewer_display_name) tuples, ordered by creation."""
+    from app.identity.models import User
+    result = await session.execute(
+        select(PdfAnnotation, User.display_name)
+        .join(User, User.id == PdfAnnotation.reviewer_id)
+        .where(PdfAnnotation.submission_id == submission_id)
+        .order_by(PdfAnnotation.created_at)
+    )
+    return [(row.PdfAnnotation, row.display_name) for row in result.all()]
+
+
+async def get_annotation(session: AsyncSession, annotation_id: UUID) -> PdfAnnotation | None:
+    result = await session.execute(select(PdfAnnotation).where(PdfAnnotation.id == annotation_id))
+    return result.scalar_one_or_none()
+
+
+async def create_annotation(
+    session: AsyncSession,
+    *,
+    submission_id: UUID,
+    reviewer_id: UUID,
+    quoted_text: str | None,
+    page_num: int | None,
+    body: str,
+) -> PdfAnnotation:
+    annotation = PdfAnnotation(
+        submission_id=submission_id,
+        reviewer_id=reviewer_id,
+        quoted_text=quoted_text,
+        page_num=page_num,
+        body=body,
+    )
+    session.add(annotation)
+    await session.commit()
+    await session.refresh(annotation)
+    return annotation
+
+
+async def edit_annotation(
+    session: AsyncSession, annotation_id: UUID, body: str
+) -> PdfAnnotation | None:
+    annotation = await get_annotation(session, annotation_id)
+    if annotation is None:
+        return None
+    annotation.body = body
+    await session.commit()
+    await session.refresh(annotation)
+    return annotation
+
+
+async def delete_annotation(session: AsyncSession, annotation_id: UUID) -> bool:
+    annotation = await get_annotation(session, annotation_id)
+    if annotation is None:
+        return False
+    await session.delete(annotation)
+    await session.commit()
+    return True

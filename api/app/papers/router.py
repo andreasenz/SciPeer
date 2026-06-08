@@ -13,6 +13,12 @@ from app.papers.schemas import FieldCategoryOut, SubmissionIn, SubmissionOut
 router = APIRouter()
 
 
+async def _out_with_authors(session, paper: object) -> SubmissionOut:
+    """Enrich a SubmissionOut with the list of author display names."""
+    names = await service.get_submission_authors(session, paper.id)  # type: ignore[union-attr]
+    return SubmissionOut.model_validate(paper).model_copy(update={"author_names": names})
+
+
 @router.get("/fields", response_model=list[FieldCategoryOut])
 async def list_fields(session: ReadDBSession) -> list[FieldCategoryOut]:
     return [FieldCategoryOut.model_validate(c) for c in await service.list_field_categories(session)]
@@ -39,7 +45,7 @@ async def get_paper(paper_id: UUID, session: ReadDBSession) -> SubmissionOut:
     paper = await service.get_submission(session, paper_id)
     if paper is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paper not found")
-    return SubmissionOut.model_validate(paper)
+    return await _out_with_authors(session, paper)
 
 
 @router.post("", response_model=SubmissionOut, status_code=status.HTTP_201_CREATED)
@@ -51,10 +57,11 @@ async def create_paper(body: SubmissionIn, user_id: CurrentUserID, session: DBSe
         field_category_id=body.field_category_id,
         pdf_url="",
         author_id=user_id,
+        coauthors=body.coauthors,
     )
     from app.core.search import index_paper
     await index_paper({"id": str(paper.id), "title": paper.title, "abstract": paper.abstract, "status": paper.status})
-    return SubmissionOut.model_validate(paper)
+    return await _out_with_authors(session, paper)
 
 
 @router.post("/{paper_id}/upload-pdf", response_model=SubmissionOut)

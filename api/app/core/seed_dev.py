@@ -13,6 +13,7 @@ Inserts:
 
 import asyncio
 import logging
+from uuid import UUID
 
 from sqlalchemy import select
 
@@ -273,6 +274,45 @@ async def seed() -> None:
 
         await session.commit()
         logger.info("seed: dev seed complete")
+
+
+async def ensure_coi_for_real_user(user_id: UUID) -> None:
+    """Dev-only: ensure a COI edge exists between a real (non-seed) user and seed_0.
+
+    Called on every ORCID login so the edge is always present even if the API
+    restarted after the user was created.  Uses its own session so it is safe to
+    call from a request handler that hasn't committed yet.
+    """
+    async with SessionFactory() as session:
+        seed_0 = (
+            await session.execute(select(User).where(User.orcid_id == SEED_ORCID_IDS[0]))
+        ).scalar_one_or_none()
+        if seed_0 is None:
+            return
+
+        user = (
+            await session.execute(select(User).where(User.id == user_id))
+        ).scalar_one_or_none()
+        if user is None or user.orcid_id in set(SEED_ORCID_IDS) or user.id == seed_0.id:
+            return
+
+        changed = False
+        for x, y in ((user.id, seed_0.id), (seed_0.id, user.id)):
+            exists = (
+                await session.execute(
+                    select(CoauthorEdge).where(
+                        CoauthorEdge.author_id == x,
+                        CoauthorEdge.coauthor_id == y,
+                    )
+                )
+            ).scalar_one_or_none()
+            if exists is None:
+                session.add(CoauthorEdge(author_id=x, coauthor_id=y))
+                changed = True
+
+        if changed:
+            await session.commit()
+            logger.info("dev: COI edge created — %s ↔ seed_0", user.display_name)
 
 
 if __name__ == "__main__":

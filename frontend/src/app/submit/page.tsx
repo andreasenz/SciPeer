@@ -10,18 +10,27 @@ import {
   IconShieldCheck,
   IconAlertTriangle,
   IconFile,
+  IconPlus,
+  IconUserPlus,
 } from '@tabler/icons-react'
 import Topbar from '@/components/layout/Topbar'
 import Sidebar from '@/components/layout/Sidebar'
 import Panel from '@/components/ui/Panel'
+import { useToast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import type { FieldCategory } from '@/lib/types'
 
 type COIStatus = 'idle' | 'running' | 'ok'
 
+interface Coauthor {
+  display_name: string
+  orcid_id: string
+}
+
 export default function SubmitPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { showToast } = useToast()
 
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
@@ -32,6 +41,10 @@ export default function SubmitPage() {
   const [coiStatus, setCoiStatus] = useState<COIStatus>('idle')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const [coauthors, setCoauthors] = useState<Coauthor[]>([])
+  const [coName, setCoName] = useState('')
+  const [coOrcid, setCoOrcid] = useState('')
 
   useEffect(() => {
     api.papers.fields().then(setFields).catch(() => {})
@@ -52,6 +65,17 @@ export default function SubmitPage() {
     setTimeout(() => setCoiStatus('ok'), 1800)
   }
 
+  function addCoauthor() {
+    if (!coName.trim()) return
+    setCoauthors(prev => [...prev, { display_name: coName.trim(), orcid_id: coOrcid.trim() }])
+    setCoName('')
+    setCoOrcid('')
+  }
+
+  function removeCoauthor(idx: number) {
+    setCoauthors(prev => prev.filter((_, i) => i !== idx))
+  }
+
   async function handleSubmit() {
     if (!title.trim() || !abstract.trim() || !fieldId || !file) {
       setError('Title, abstract, field, and PDF are required')
@@ -60,12 +84,20 @@ export default function SubmitPage() {
     setError('')
     setSubmitting(true)
     try {
-      const paper = await api.papers.create({ title, abstract, field_category_id: fieldId })
+      const paper = await api.papers.create({
+        title,
+        abstract,
+        field_category_id: fieldId,
+        coauthors: coauthors.map(c => ({ display_name: c.display_name, orcid_id: c.orcid_id || null })),
+      })
       await api.papers.uploadPdf(paper.id, file)
       await api.papers.submit(paper.id)
+      showToast('Paper submitted for review!')
       router.push('/my-papers')
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Submission failed')
+      const msg = e instanceof Error ? e.message : 'Submission failed'
+      setError(msg)
+      showToast(msg, 'error')
       setSubmitting(false)
     }
   }
@@ -123,6 +155,51 @@ export default function SubmitPage() {
                   <option value="">Select a field…</option>
                   {fields.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
                 </select>
+              </Panel>
+
+              <Panel>
+                <div className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <IconUserPlus size={16} />
+                  Co-authors
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--ink3)', marginBottom: 12, marginTop: 0 }}>
+                  Provide ORCID for co-authors to enable conflict-of-interest checks.
+                </p>
+
+                {coauthors.map((co, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, background: 'var(--surface2)', borderRadius: 8, padding: '6px 10px' }}>
+                    <span style={{ fontSize: 13, flex: 1, color: 'var(--ink)' }}>{co.display_name}</span>
+                    {co.orcid_id && <span style={{ fontSize: 11, color: 'var(--ink3)', fontFamily: 'monospace' }}>{co.orcid_id}</span>}
+                    <button onClick={() => removeCoauthor(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink3)', padding: 2 }}>
+                      <IconX size={14} />
+                    </button>
+                  </div>
+                ))}
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <input
+                    value={coName}
+                    onChange={e => setCoName(e.target.value)}
+                    placeholder="Full name *"
+                    onKeyDown={e => e.key === 'Enter' && addCoauthor()}
+                    style={{ flex: 2, border: '1.5px solid var(--border)', borderRadius: 8, padding: '8px 11px', fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--ink)' }}
+                  />
+                  <input
+                    value={coOrcid}
+                    onChange={e => setCoOrcid(e.target.value)}
+                    placeholder="ORCID (optional)"
+                    onKeyDown={e => e.key === 'Enter' && addCoauthor()}
+                    style={{ flex: 3, border: '1.5px solid var(--border)', borderRadius: 8, padding: '8px 11px', fontSize: 13, fontFamily: 'monospace', outline: 'none', color: 'var(--ink)' }}
+                  />
+                  <button
+                    onClick={addCoauthor}
+                    disabled={!coName.trim()}
+                    style={{ background: 'var(--primary)', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, opacity: coName.trim() ? 1 : 0.4 }}
+                  >
+                    <IconPlus size={14} />
+                    Add
+                  </button>
+                </div>
               </Panel>
 
               <Panel>

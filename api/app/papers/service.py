@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.papers.models import FieldCategory, PaperStatus, StatusHistory, Submission, SubmissionAuthor
+from app.papers.schemas import CoauthorIn
 
 
 async def list_submissions(session: AsyncSession, status: str | None = None) -> list[Submission]:
@@ -19,6 +20,17 @@ async def get_submission(session: AsyncSession, submission_id: UUID) -> Submissi
     return result.scalar_one_or_none()
 
 
+async def get_submission_authors(session: AsyncSession, submission_id: UUID) -> list[str]:
+    from app.identity.models import User
+    result = await session.execute(
+        select(User.display_name)
+        .join(SubmissionAuthor, SubmissionAuthor.user_id == User.id)
+        .where(SubmissionAuthor.submission_id == submission_id)
+        .order_by(SubmissionAuthor.position)
+    )
+    return [row[0] for row in result.all()]
+
+
 async def create_submission(
     session: AsyncSession,
     *,
@@ -27,6 +39,7 @@ async def create_submission(
     field_category_id: UUID,
     pdf_url: str,
     author_id: UUID,
+    coauthors: list[CoauthorIn] | None = None,
 ) -> Submission:
     sub = Submission(
         title=title,
@@ -39,6 +52,26 @@ async def create_submission(
     await session.flush()
     session.add(SubmissionAuthor(submission_id=sub.id, user_id=author_id, position=0))
     session.add(StatusHistory(submission_id=sub.id, to_status=PaperStatus.DRAFT, actor_id=author_id))
+
+    if coauthors:
+        from app.identity.service import get_or_create_user
+        for i, coauthor in enumerate(coauthors):
+            if not coauthor.orcid_id:
+                continue
+            co_user = await get_or_create_user(session, coauthor.orcid_id, coauthor.display_name, email=None)
+            if co_user.id == author_id:
+                continue
+            existing = (
+                await session.execute(
+                    select(SubmissionAuthor).where(
+                        SubmissionAuthor.submission_id == sub.id,
+                        SubmissionAuthor.user_id == co_user.id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if existing is None:
+                session.add(SubmissionAuthor(submission_id=sub.id, user_id=co_user.id, position=i + 1))
+
     await session.commit()
     await session.refresh(sub)
     return sub
