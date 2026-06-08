@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/TextLayer.css'
 
-// Use CDN worker — avoids bundler configuration for the worker binary
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`
+// pdfjs-dist v4.x (bundled with react-pdf v9) ships an ESM worker (.mjs)
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
 export interface SelectionInfo {
   text: string

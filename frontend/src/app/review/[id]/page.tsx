@@ -22,7 +22,9 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
-import PdfViewer, { type SelectionInfo } from '@/components/ui/PdfViewer'
+import dynamic from 'next/dynamic'
+import type { SelectionInfo } from '@/components/ui/PdfViewer'
+const PdfViewer = dynamic(() => import('@/components/ui/PdfViewer'), { ssr: false })
 import type { Paper, PdfAnnotation, ReviewComment, ReviewScore } from '@/lib/types'
 
 type CoiStatus = 'loading' | 'ok' | 'conflict' | 'unauthenticated'
