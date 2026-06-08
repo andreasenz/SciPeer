@@ -1,9 +1,18 @@
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @field_validator("database_replica_url", mode="before")
+    @classmethod
+    def _none_if_blank(cls, v: object) -> object:
+        # Docker Compose env_file doesn't strip inline comments, so a line like
+        # DATABASE_REPLICA_URL=  # optional becomes "  # optional" — treat as None.
+        if isinstance(v, str) and (not v.strip() or v.strip().startswith("#")):
+            return None
+        return v
 
     app_env: str = "development"
     app_base_url: AnyHttpUrl = AnyHttpUrl("http://localhost:3000")
