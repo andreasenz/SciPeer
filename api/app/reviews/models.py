@@ -17,8 +17,9 @@ class CoauthorEdge(Base):
     __tablename__ = "coauthor_edges"
     __table_args__ = {"schema": "reviews"}
 
-    author_id: Mapped[UUID] = mapped_column(ForeignKey("identity.users.id"), primary_key=True)
-    coauthor_id: Mapped[UUID] = mapped_column(ForeignKey("identity.users.id"), primary_key=True)
+    # No FK — graph is seeded from ORCID; referenced users may not be registered yet
+    author_id: Mapped[UUID] = mapped_column(primary_key=True)
+    coauthor_id: Mapped[UUID] = mapped_column(primary_key=True)
     source_work: Mapped[str | None] = mapped_column(Text, nullable=True)
     synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

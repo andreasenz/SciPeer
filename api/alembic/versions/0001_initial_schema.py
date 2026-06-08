@@ -86,8 +86,9 @@ def upgrade() -> None:
     # ── reviews.coauthor_edges ────────────────────────────────────────────────
     op.create_table(
         "coauthor_edges",
-        sa.Column("author_id", sa.UUID(), sa.ForeignKey("identity.users.id"), primary_key=True),
-        sa.Column("coauthor_id", sa.UUID(), sa.ForeignKey("identity.users.id"), primary_key=True),
+        # No FK — graph seeded from ORCID; users may not be registered yet
+        sa.Column("author_id", sa.UUID(), primary_key=True),
+        sa.Column("coauthor_id", sa.UUID(), primary_key=True),
         sa.Column("source_work", sa.Text(), nullable=True),
         sa.Column("synced_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         schema="reviews",
