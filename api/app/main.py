@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -12,9 +14,22 @@ from app.reviews.router import router as reviews_router
 from app.doi.router import router as doi_router
 from app.gamification.router import router as gamification_router
 
+logger = logging.getLogger(__name__)
+
+
+async def _startup() -> None:
+    from app.core.storage import ensure_buckets
+    from app.core.search import ensure_index
+    try:
+        await asyncio.to_thread(ensure_buckets)
+    except Exception as exc:
+        logger.warning("MinIO bucket init failed (non-fatal): %s", exc)
+    await ensure_index()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await _startup()
     yield
 
 
@@ -29,7 +44,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[str(settings.app_base_url)],
+    allow_origins=[str(settings.app_base_url), "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,5 +61,4 @@ app.include_router(gamification_router, prefix="/api/v1/gamification", tags=["ga
 async def health() -> dict:
     db_ok = await check_db()
     redis_ok = await check_redis()
-    status = "ok" if db_ok and redis_ok else "degraded"
-    return {"status": status, "db": db_ok, "redis": redis_ok}
+    return {"status": "ok" if db_ok and redis_ok else "degraded", "db": db_ok, "redis": redis_ok}

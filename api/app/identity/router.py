@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import RedirectResponse
+from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.deps import CurrentUserID, DBSession
+from app.core.security import decode_token
 from app.identity import service
-from app.identity.schemas import OrcidCallbackIn, TokenOut, UserOut
-from sqlalchemy import select
 from app.identity.models import User
+from app.identity.schemas import OrcidCallbackIn, RefreshIn, TokenOut, UserOut
 
 router = APIRouter()
 
@@ -36,7 +37,25 @@ async def orcid_callback(payload: OrcidCallbackIn, session: DBSession) -> TokenO
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ORCID ID missing")
 
     user = await service.get_or_create_user(session, orcid_id, display_name, email=None)
+
+    # Background: sync coauthor graph (non-blocking, errors are logged)
+    import asyncio
+    asyncio.create_task(service.sync_coauthor_graph(session, user))
+
     return await service.issue_tokens(user.id)
+
+
+@router.post("/refresh", response_model=TokenOut)
+async def refresh(body: RefreshIn) -> TokenOut:
+    try:
+        payload = decode_token(body.refresh_token)
+        if payload.get("type") != "refresh":
+            raise ValueError
+        from uuid import UUID
+        user_id = UUID(payload["sub"])
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+    return await service.issue_tokens(user_id)
 
 
 @router.get("/me", response_model=UserOut)

@@ -23,6 +23,16 @@ export const api = {
   auth: {
     me: () => request<import('./types').User>('/api/v1/auth/me'),
     loginUrl: () => `${API_BASE}/api/v1/auth/orcid/login`,
+    callback: (code: string, state?: string) =>
+      request<import('./types').TokenResponse>('/api/v1/auth/orcid/callback', {
+        method: 'POST',
+        body: JSON.stringify({ code, state: state ?? null }),
+      }),
+    refresh: (refresh_token: string) =>
+      request<import('./types').TokenResponse>('/api/v1/auth/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ refresh_token }),
+      }),
   },
 
   papers: {

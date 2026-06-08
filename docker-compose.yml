@@ -2,7 +2,8 @@ services:
   api:
     build: ./api
     command: >
-      sh -c "alembic upgrade head &&
+      sh -c "python scripts/gen_keys.py &&
+             alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - ./api:/app

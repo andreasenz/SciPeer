@@ -17,7 +17,11 @@ class UserOut(BaseModel):
 
 class OrcidCallbackIn(BaseModel):
     code: str
-    state: str
+    state: str | None = None
+
+
+class RefreshIn(BaseModel):
+    refresh_token: str
 
 
 class TokenOut(BaseModel):

@@ -44,3 +44,18 @@ def presigned_url(paper_id: UUID, version: int, filename: str, expires: int = 36
         Params={"Bucket": settings.s3_bucket_papers, "Key": key},
         ExpiresIn=expires,
     )
+
+
+def ensure_buckets() -> None:
+    """Create required buckets on startup. Safe to call repeatedly."""
+    client = get_client()
+    try:
+        existing = {b["Name"] for b in client.list_buckets().get("Buckets", [])}
+    except Exception:
+        existing = set()
+    for bucket in (settings.s3_bucket_papers,):
+        if bucket not in existing:
+            try:
+                client.create_bucket(Bucket=bucket)
+            except Exception:
+                pass

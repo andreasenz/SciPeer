@@ -1,8 +1,9 @@
 'use client'
 
-import { IconSearch, IconBell } from '@tabler/icons-react'
+import { IconSearch, IconBell, IconLogin } from '@tabler/icons-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
 
 const NAV = [
   { label: 'Feed', href: '/' },
@@ -13,6 +14,11 @@ const NAV = [
 
 export default function Topbar() {
   const pathname = usePathname()
+  const { user, loading, login, logout } = useAuth()
+
+  const initials = user?.display_name
+    ? user.display_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '?'
 
   return (
     <header className="topbar">
@@ -35,8 +41,30 @@ export default function Topbar() {
       </div>
 
       <div className="topbar-right">
-        <IconBell />
-        <div className="avatar">A</div>
+        {!loading && (
+          user ? (
+            <>
+              <IconBell />
+              <div
+                className="avatar"
+                title={`${user.display_name} — click to sign out`}
+                onClick={logout}
+                style={{ cursor: 'pointer' }}
+              >
+                {initials}
+              </div>
+            </>
+          ) : (
+            <button
+              onClick={login}
+              className="btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, padding: '8px 14px' }}
+            >
+              <IconLogin size={15} />
+              Login with ORCID
+            </button>
+          )
+        )}
       </div>
     </header>
   )

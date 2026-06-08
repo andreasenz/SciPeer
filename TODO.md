@@ -7,18 +7,9 @@ Move to **Done** with a completion date when finished.
 
 ## Planned
 
-- [ ] Docker Compose for local development
-- [ ] ORCID OAuth2 integration (`identity` module)
-- [ ] Paper submission flow (`papers` module)
-- [ ] Co-author graph + COI check (`reviews` module)
-- [ ] Review scoring and acceptance logic (`reviews` module)
-- [ ] DataCite DOI integration (`doi` module)
-- [ ] Reputation / karma system (`gamification` module)
-- [ ] Async notifications (`notifications` module)
-- [ ] Meilisearch integration for paper search
 - [ ] Kubernetes Helm charts
 - [ ] Terraform IaC for cloud resources
-- [ ] CI/CD pipeline (Gitea Actions)
+- [ ] CI/CD pipeline (GitHub Actions — partial: workflow exists, needs secrets)
 - [ ] Grafana + Prometheus + Loki + Tempo observability stack
 
 ---
@@ -34,3 +25,12 @@ Move to **Done** with a completion date when finished.
 - [x] 2026-06-08 — Initialise GitHub repository and push initial commit
 - [x] 2026-06-08 — Scaffold backend project (FastAPI modular monolith, Alembic, COI tests all passing)
 - [x] 2026-06-08 — Scaffold frontend project (Next.js 15 App Router, 4 views matching mockup)
+- [x] 2026-06-08 — Docker Compose for local development (all 7 services running)
+- [x] 2026-06-08 — ORCID OAuth2 integration: login redirect, code exchange, JWT RS256, refresh token, ORCID works coauthor sync
+- [x] 2026-06-08 — Paper submission flow: create, PDF upload to MinIO, submit for review (DRAFT→UNDER_REVIEW)
+- [x] 2026-06-08 — Co-author graph + COI check: recursive CTE, ORCID sync, create_coauthor_edge service
+- [x] 2026-06-08 — Review scoring and acceptance logic: submit score/comment, vote, resolve, weighted avg, FSM transitions
+- [x] 2026-06-08 — DataCite DOI integration: create_or_mint_doi triggered on PUBLISHED (skips gracefully without credentials)
+- [x] 2026-06-08 — Reputation / karma system: XP awards, logarithmic weight calculation, event log
+- [x] 2026-06-08 — Async notifications: Redis Streams producers on status change + review submit; worker consumes
+- [x] 2026-06-08 — Meilisearch integration: index on paper create, search endpoint, filterable by status
