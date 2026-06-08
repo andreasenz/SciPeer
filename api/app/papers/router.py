@@ -1,4 +1,5 @@
 import asyncio
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
@@ -53,9 +54,9 @@ async def create_paper(body: SubmissionIn, user_id: CurrentUserID, session: DBSe
 @router.post("/{paper_id}/upload-pdf", response_model=SubmissionOut)
 async def upload_pdf(
     paper_id: UUID,
-    file: UploadFile = File(...),
     user_id: CurrentUserID,
     session: DBSession,
+    file: Annotated[UploadFile, File(...)],
 ) -> SubmissionOut:
     from sqlalchemy import select
     from app.papers.models import SubmissionAuthor
