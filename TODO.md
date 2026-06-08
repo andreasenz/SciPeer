@@ -9,7 +9,7 @@ Move to **Done** with a completion date when finished.
 
 - [ ] Initialise GitHub repository and push initial commit
 - [ ] Scaffold backend project (FastAPI, module structure, Alembic)
-- [ ] Scaffold frontend project (Next.js 15)
+- [ ] Scaffold frontend project (Next.js 15) — branch pushed, awaiting merge
 - [ ] Docker Compose for local development
 - [ ] ORCID OAuth2 integration (`identity` module)
 - [ ] Paper submission flow (`papers` module)
@@ -34,3 +34,5 @@ Move to **Done** with a completion date when finished.
 - [x] 2026-06-08 — Create `docs/ARCHITECTURE.md`
 - [x] 2026-06-08 — Create `docs/STACK.md`
 - [x] 2026-06-08 — Create `docs/DEVOPS.md`
+- [x] 2026-06-08 — Scaffold backend project (FastAPI modular monolith, Alembic, COI tests all passing)
+- [x] 2026-06-08 — Scaffold frontend project (Next.js 15 App Router, 4 views matching mockup, pushed to `feature/frontend-scaffold`)
