@@ -4,7 +4,9 @@ import asyncio
 import json
 import logging
 
-from app.core.redis import get_client
+from redis.exceptions import TimeoutError as RedisTimeoutError
+
+from app.core.redis import get_blocking_client, get_client
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,7 @@ STREAMS = {
 }
 CONSUMER_GROUP = "notification-worker"
 CONSUMER_NAME = "worker-1"
+BLOCK_MS = 5000
 
 
 async def _handle_status_change(data: dict) -> None:
@@ -25,22 +28,34 @@ async def _handle_review_submitted(data: dict) -> None:
 
 
 async def run() -> None:
-    r = get_client()
+    # Use regular client for setup commands, blocking client for XREADGROUP
+    setup = get_client()
+    r = get_blocking_client()
+
     for stream in STREAMS:
         try:
-            await r.xgroup_create(stream, CONSUMER_GROUP, id="0", mkstream=True)
+            await setup.xgroup_create(stream, CONSUMER_GROUP, id="0", mkstream=True)
         except Exception:
             pass  # group already exists
 
     logger.info("Notification worker started, listening on: %s", list(STREAMS))
     while True:
-        messages = await r.xreadgroup(
-            CONSUMER_GROUP,
-            CONSUMER_NAME,
-            {s: ">" for s in STREAMS},
-            count=10,
-            block=5000,
-        )
+        try:
+            messages = await r.xreadgroup(
+                CONSUMER_GROUP,
+                CONSUMER_NAME,
+                {s: ">" for s in STREAMS},
+                count=10,
+                block=BLOCK_MS,
+            )
+        except RedisTimeoutError:
+            # Normal when no messages arrive within the block window
+            continue
+        except Exception as exc:
+            logger.error("XREADGROUP error: %s — retrying in 2s", exc)
+            await asyncio.sleep(2)
+            continue
+
         for stream_name, entries in (messages or []):
             handler_name = STREAMS.get(stream_name)
             for msg_id, fields in entries:
@@ -48,7 +63,7 @@ async def run() -> None:
                     data = json.loads(fields.get("payload", "{}"))
                     if handler_name:
                         await globals()[handler_name](data)
-                    await r.xack(stream_name, CONSUMER_GROUP, msg_id)
+                    await setup.xack(stream_name, CONSUMER_GROUP, msg_id)
                 except Exception as exc:
                     logger.error("Failed to process %s: %s", msg_id, exc)
 
