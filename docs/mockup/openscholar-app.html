@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenScholar — Community Review Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.34.0/iconfont/tabler-icons.min.css" rel="stylesheet">
+<style>
+  .ti{font-family:"tabler-icons"!important}
+  :root{
+    --bg:#eef1f6; --surface:#ffffff; --surface2:#f6f8fb;
+    --border:#e2e8f0; --border2:#eef2f7;
+    --ink:#0f1b2d; --ink2:#475569; --ink3:#94a3b8;
+    --primary:#1e4fcd; --primary-dk:#163b9c; --primary-bg:#eaf0fd;
+    --green:#0f9d58; --green-bg:#e6f5ec;
+    --amber:#d98a0e; --amber-bg:#fdf3e0;
+    --red:#d23b3b; --red-bg:#fdeaea;
+    --purple:#7c3aed; --purple-bg:#f1ecfe;
+    --radius:14px; --radius-sm:9px;
+    --shadow:0 1px 2px rgba(15,27,45,.04), 0 4px 16px rgba(15,27,45,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Public Sans',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 1px 1px, rgba(15,27,45,.035) 1px, transparent 0);background-size:22px 22px}
+  .app{max-width:1440px;margin:0 auto;min-height:100vh;background:var(--bg)}
+  .serif{font-family:'Fraunces',serif}
+
+  /* Top bar */
+  .topbar{height:62px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;
+    gap:22px;padding:0 24px;position:sticky;top:0;z-index:20}
+  .brand{display:flex;align-items:center;gap:11px;flex-shrink:0;cursor:pointer}
+  .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--primary),#3b6fe0);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;letter-spacing:.5px}
+  .brand-name{font-family:'Fraunces',serif;font-weight:600;font-size:20px;letter-spacing:-.3px}
+  .topnav{display:flex;gap:4px;margin-left:8px}
+  .topnav .t{padding:8px 14px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--ink2);cursor:pointer;transition:.12s;white-space:nowrap}
+  .topnav .t:hover{background:var(--surface2)}
+  .topnav .t.active{background:var(--primary-bg);color:var(--primary);font-weight:600}
+  .search{flex:1;max-width:300px;display:flex;align-items:center;gap:9px;background:var(--surface2);
+    border:1px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--ink3);font-size:13px}
+  .search i{font-size:16px}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:18px;color:var(--ink2)}
+  .topbar-right i{font-size:19px;cursor:pointer}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c084fc);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:13px}
+
+  .view{display:none}
+  .view.active{display:block}
+
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:100px;white-space:nowrap}
+  .chip .ti{font-size:12px}
+  .chip-pub{background:var(--green-bg);color:#0a6b3c}
+  .chip-rev{background:var(--primary-bg);color:var(--primary-dk)}
+  .chip-draft{background:var(--surface2);color:var(--ink3)}
+  .chip-disc{background:var(--purple-bg);color:#5b21b6}
+  .chip-urg{background:var(--amber-bg);color:#8a5a08}
+  .chip-urg.hot{background:var(--red-bg);color:#9e2626}
+
+  /* ===== Dashboard ===== */
+  .body{display:flex;align-items:stretch}
+  .sidebar{width:252px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);
+    padding:20px 16px;display:flex;flex-direction:column;gap:6px;min-height:calc(100vh - 62px)}
+  .btn-submit{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);color:#fff;
+    border:none;border-radius:10px;padding:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    box-shadow:0 2px 8px rgba(30,79,205,.28);transition:.15s}
+  .btn-submit:hover{background:var(--primary-dk)}
+  .nav{display:flex;flex-direction:column;gap:3px;margin-top:14px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--ink2);
+    font-size:14px;font-weight:500;cursor:pointer;transition:.12s}
+  .nav-item i{font-size:19px}
+  .nav-item:hover{background:var(--surface2)}
+  .nav-item.active{background:var(--primary-bg);color:var(--primary);font-weight:600}
+  .nav-sep{height:1px;background:var(--border2);margin:14px 4px}
+  .filter-label{font-size:11px;font-weight:700;letter-spacing:.7px;color:var(--ink3);padding:0 12px;margin-bottom:6px}
+  .check{display:flex;align-items:center;gap:11px;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:13.5px;color:var(--ink2);transition:.12s}
+  .check:hover{background:var(--surface2)}
+  .box{width:16px;height:16px;border-radius:5px;border:1.6px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .box i{font-size:11px;display:none;color:#fff}
+  .check.on .box{background:var(--primary);border-color:var(--primary)}
+  .check.on .box i{display:block}
+  .check.on{color:var(--ink)}
+  .main{flex:1;padding:24px 28px 40px;min-width:0}
+  .head{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+  .tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:4px}
+  .tab{padding:8px 16px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink2);cursor:pointer;transition:.12s}
+  .tab.active{background:var(--primary);color:#fff;font-weight:600}
+  .sort{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);
+    border-radius:9px;padding:9px 14px;font-size:13px;font-weight:500;color:var(--ink2);cursor:pointer}
+  .sort i{font-size:15px;color:var(--ink3)}
+  .beacon{display:flex;align-items:center;gap:14px;background:var(--amber-bg);border:1px solid #f3dca8;
+    border-radius:var(--radius);padding:15px 18px;margin-bottom:22px}
+  .beacon-ico{width:38px;height:38px;border-radius:10px;background:var(--amber);color:#fff;display:flex;
+    align-items:center;justify-content:center;font-size:20px;flex-shrink:0;animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(217,138,14,.35)}50%{box-shadow:0 0 0 7px rgba(217,138,14,0)}}
+  .beacon-txt b{display:block;font-size:14.5px;color:#8a5a08;font-weight:600;margin-bottom:2px}
+  .beacon-txt span{font-size:13px;color:#a06f1d}
+  .beacon-link{margin-left:auto;background:var(--surface);color:var(--amber);border:1px solid #f3dca8;
+    border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;
+    display:flex;flex-direction:column;gap:11px;box-shadow:var(--shadow);transition:.18s;cursor:pointer}
+  .card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(15,27,45,.10);border-color:#cdd7e5}
+  .card-top{display:flex;align-items:center;gap:8px}
+  .card-top .chip-urg{margin-left:auto}
+  .card-title{font-family:'Fraunces',serif;font-size:17px;font-weight:600;line-height:1.32;letter-spacing:-.2px}
+  .card-disc{align-self:flex-start}
+  .card-auth{font-size:12px;color:var(--ink2);font-weight:500}
+  .card-abs{font-size:12.5px;line-height:1.55;color:var(--ink3);flex:1}
+  .card-foot{display:flex;align-items:center;gap:16px;padding-top:11px;border-top:1px solid var(--border2);font-size:12px}
+  .metric{display:flex;align-items:center;gap:5px;color:var(--ink2);font-weight:500}
+  .metric i{font-size:14px}
+  .metric .star{color:var(--amber)}
+  .card-age{margin-left:auto;color:var(--ink3)}
+
+  /* ===== generic page wrap for views 2-4 ===== */
+  .page{padding:28px 36px 48px;max-width:1440px}
+  .page-head{margin-bottom:24px}
+  .page-head h1{font-family:'Fraunces',serif;font-size:26px;font-weight:600;letter-spacing:-.4px;margin-bottom:5px}
+  .page-head p{font-size:14px;color:var(--ink2)}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .panel-pad{padding:22px}
+  .panel-title{font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--ink2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+  /* ===== View 2: Graph check ===== */
+  .v2-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:22px;align-items:start}
+  .graph-wrap{position:relative;height:430px;background:radial-gradient(circle at 50% 45%, #f8fafd, #eef2f8);border-radius:12px;overflow:hidden;border:1px solid var(--border2)}
+  .legend{display:flex;gap:18px;margin-top:14px;font-size:12.5px;color:var(--ink2);flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .ldot{width:11px;height:11px;border-radius:50%}
+  .algo-row{display:flex;align-items:flex-start;gap:11px;padding:13px 0;border-bottom:1px solid var(--border2)}
+  .algo-row:last-child{border-bottom:none}
+  .algo-ico{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .algo-ok{background:var(--green-bg);color:var(--green)}
+  .algo-block{background:var(--red-bg);color:var(--red)}
+  .algo-run{background:var(--primary-bg);color:var(--primary)}
+  .algo-txt b{font-size:13.5px;font-weight:600;display:block;margin-bottom:2px}
+  .algo-txt span{font-size:12.5px;color:var(--ink2);line-height:1.5}
+  .verdict{margin-top:18px;background:var(--green-bg);border:1px solid #b6e4c9;border-radius:11px;padding:15px 16px;display:flex;align-items:center;gap:12px}
+  .verdict i{font-size:24px;color:var(--green)}
+  .verdict b{font-size:14.5px;color:#0a6b3c;display:block}
+  .verdict span{font-size:12.5px;color:#2f7d54}
+  .kw{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .kw .chip{cursor:default}
+  .field-label{font-size:12px;font-weight:600;color:var(--ink2);margin:18px 0 8px}
+  .upload{border:2px dashed var(--border);border-radius:12px;padding:26px;text-align:center;color:var(--ink3);background:var(--surface2)}
+  .upload i{font-size:30px;display:block;margin-bottom:8px;color:var(--ink3)}
+
+  /* ===== View 3: Workspace ===== */
+  .v3{display:grid;grid-template-columns:1.25fr 1fr;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);min-height:640px}
+  .ms-pane{border-right:1px solid var(--border);display:flex;flex-direction:column}
+  .ms-toolbar{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border2);background:var(--surface2);font-size:13px;color:var(--ink2)}
+  .ms-toolbar i{font-size:17px;cursor:pointer}
+  .ms-toolbar .sp{margin-left:auto}
+  .ms-body{padding:32px 38px;overflow:auto;background:#fcfcfd}
+  .ms-body h2{font-family:'Fraunces',serif;font-size:21px;font-weight:600;line-height:1.3;text-align:center;margin-bottom:10px}
+  .ms-auth{text-align:center;font-size:12.5px;color:var(--ink2);margin-bottom:4px}
+  .ms-affil{text-align:center;font-size:11.5px;color:var(--ink3);font-style:italic;margin-bottom:22px}
+  .ms-h{font-weight:700;font-size:13px;margin:18px 0 7px;letter-spacing:.3px}
+  .ms-body p{font-size:12.5px;line-height:1.85;color:#3a4760;text-align:justify;margin-bottom:10px}
+  .hl{background:#fff3cf;border-bottom:2px solid var(--amber);padding:0 2px;cursor:pointer;border-radius:2px}
+  .review-pane{display:flex;flex-direction:column;background:var(--surface)}
+  .rp-head{padding:16px 18px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:9px}
+  .rp-head .ti{font-size:18px;color:var(--primary)}
+  .rp-head b{font-size:15px;font-weight:600}
+  .rp-head .x{margin-left:auto;color:var(--ink3);cursor:pointer}
+  .score-box{padding:16px 18px;border-bottom:1px solid var(--border2)}
+  .score-top{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .score-num{font-family:'Fraunces',serif;font-size:30px;font-weight:600;color:var(--primary)}
+  .score-of{font-size:14px;color:var(--ink3)}
+  .score-votes{margin-left:auto;font-size:12px;color:var(--ink2)}
+  .bars{display:flex;flex-direction:column;gap:5px}
+  .bar-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink3)}
+  .bar-track{flex:1;height:6px;background:var(--surface2);border-radius:4px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--primary);border-radius:4px}
+  .rp-scroll{flex:1;overflow:auto;padding:6px 18px 18px}
+  .rsec{font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);margin:18px 0 10px;display:flex;align-items:center;gap:7px}
+  .comment{border:1px solid var(--border);border-radius:11px;padding:13px;margin-bottom:11px;background:var(--surface)}
+  .comment.mand{border-left:3px solid var(--red)}
+  .comment.sugg{border-left:3px solid var(--amber)}
+  .c-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .c-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.3px}
+  .c-badge.mand{background:var(--red-bg);color:#9e2626}
+  .c-badge.sugg{background:var(--amber-bg);color:#8a5a08}
+  .c-status{margin-left:auto;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px}
+  .c-status.resolved{color:var(--green)}
+  .c-status.open{color:var(--ink3)}
+  .c-body{font-size:12.5px;line-height:1.6;color:var(--ink2);margin-bottom:9px}
+  .c-foot{display:flex;align-items:center;gap:14px}
+  .vote{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);cursor:pointer;user-select:none;padding:3px 7px;border-radius:6px;transition:.12s}
+  .vote:hover{background:var(--surface2)}
+  .vote.up.active{color:var(--green)}
+  .vote.down.active{color:var(--red)}
+  .vote i{font-size:15px}
+  .toggle{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink2);cursor:pointer}
+  .sw{width:32px;height:18px;border-radius:100px;background:var(--border);position:relative;transition:.18s}
+  .sw::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.18s}
+  .toggle.on .sw{background:var(--green)}
+  .toggle.on .sw::after{left:16px}
+  .rp-foot{padding:14px 18px;border-top:1px solid var(--border2);display:flex;align-items:center;gap:10px;background:var(--surface2)}
+  .countdown{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--amber);font-weight:600}
+  .btn-primary{margin-left:auto;background:var(--primary);color:#fff;border:none;border-radius:9px;padding:10px 18px;
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn-primary:hover{background:var(--primary-dk)}
+
+  /* ===== View 4: Profile ===== */
+  .v4-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:start}
+  .profile-head{display:flex;gap:20px;align-items:flex-start}
+  .pf-avatar{width:84px;height:84px;border-radius:22px;background:linear-gradient(135deg,#7c3aed,#c084fc);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:30px;flex-shrink:0;font-family:'Fraunces',serif}
+  .pf-name{font-family:'Fraunces',serif;font-size:24px;font-weight:600;margin-bottom:5px}
+  .pf-verify{display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);color:#0a6b3c;font-size:12px;
+    font-weight:600;padding:4px 10px;border-radius:100px;margin-bottom:12px}
+  .pf-bio{font-size:13px;line-height:1.6;color:var(--ink2);max-width:520px}
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .gauge{position:relative;width:150px;height:150px}
+  .gauge-label{font-family:'Fraunces',serif;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gauge-num{font-size:32px;font-weight:600;line-height:1}
+  .gauge-of{font-size:12px;color:var(--ink3);margin-top:2px}
+  .gauge-cap{font-size:12px;font-weight:600;color:var(--ink2)}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:4px}
+  .stat{background:var(--surface2);border-radius:11px;padding:15px}
+  .stat-num{font-family:'Fraunces',serif;font-size:24px;font-weight:600}
+  .stat-lab{font-size:12px;color:var(--ink2);margin-top:3px}
+  .chartbars{display:flex;align-items:flex-end;gap:9px;height:120px;margin-top:10px}
+  .cbar{flex:1;background:linear-gradient(180deg,#3b6fe0,var(--primary));border-radius:6px 6px 0 0;position:relative;min-height:6px;transition:.4s}
+  .cbar span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:10.5px;color:var(--ink3)}
+  .debt{display:flex;align-items:center;gap:14px}
+  .debt-ring{width:54px;height:54px;flex-shrink:0}
+  .debt-txt b{font-size:14px;font-weight:600;display:block;margin-bottom:3px}
+  .debt-txt span{font-size:12.5px;color:var(--ink2);line-height:1.5}
+  .badge-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .badge{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:12.5px;font-weight:600;color:var(--ink2)}
+  .badge i{font-size:17px}
+  .badge.gold i{color:#d4a017}
+  .badge.blue i{color:var(--primary)}
+  .badge.purple i{color:var(--purple)}
+  .badge.green i{color:var(--green)}
+  .xp-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border2);font-size:13px}
+  .xp-row:last-child{border-bottom:none}
+  .xp-ico{width:30px;height:30px;border-radius:8px;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .xp-amt{margin-left:auto;font-weight:700;font-size:13px}
+  .xp-amt.pos{color:var(--green)}
+  .xp-amt.neg{color:var(--red)}
+  .mt22{margin-top:22px}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand" onclick="go('dash')"><div class="logo">OS</div><div class="brand-name">OpenScholar</div></div>
+    <nav class="topnav" id="topnav">
+      <div class="t active" data-v="dash">Feed</div>
+      <div class="t" data-v="submit">Submit &amp; Check</div>
+      <div class="t" data-v="review">Review Workspace</div>
+      <div class="t" data-v="profile">Profile &amp; Karma</div>
+    </nav>
+    <div class="search"><i class="ti ti-search"></i><span>Search…</span></div>
+    <div class="topbar-right">
+      <i class="ti ti-help-circle"></i><i class="ti ti-bell"></i><div class="avatar">AS</div>
+    </div>
+  </header>
+
+  <!-- ================= VIEW 1: DASHBOARD ================= -->
+  <section class="view active" id="view-dash">
+    <div class="body">
+      <aside class="sidebar">
+        <button class="btn-submit" onclick="go('submit')"><i class="ti ti-plus"></i> Submit Paper</button>
+        <nav class="nav">
+          <div class="nav-item active"><i class="ti ti-layout-grid"></i> Home Feed</div>
+          <div class="nav-item" onclick="go('review')"><i class="ti ti-checkup-list"></i> My Reviews</div>
+          <div class="nav-item"><i class="ti ti-file-text"></i> My Submissions</div>
+          <div class="nav-item" onclick="go('profile')"><i class="ti ti-award"></i> Reputation</div>
+          <div class="nav-item"><i class="ti ti-bell"></i> Notifications</div>
+        </nav>
+        <div class="nav-sep"></div>
+        <div class="filter-label">DISCIPLINE</div>
+        <div id="discList"></div>
+      </aside>
+      <main class="main">
+        <div class="head">
+          <div class="tabs" id="dashTabs">
+            <div class="tab active" data-f="all">Published (DOI)</div>
+            <div class="tab" data-f="rev">Under Review</div>
+            <div class="tab" data-f="draft">In Progress</div>
+          </div>
+          <div class="sort">Sort: Review Urgency <i class="ti ti-chevron-down"></i></div>
+        </div>
+        <div class="beacon">
+          <div class="beacon-ico"><i class="ti ti-urgent"></i></div>
+          <div class="beacon-txt">
+            <b>Review Urgency beacon active</b>
+            <span>4 papers in your fields are nearing their review deadline. Earn bonus XP for reviewing within 48h.</span>
+          </div>
+          <button class="beacon-link">View all →</button>
+        </div>
+        <div class="grid" id="grid"></div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 2: SUBMIT & GRAPH CHECK ================= -->
+  <section class="view" id="view-submit">
+    <div class="page">
+      <div class="page-head">
+        <h1>Submission &amp; Author Graph Check</h1>
+        <p>Before a manuscript enters open review, OpenScholar screens the co-authorship graph for conflicts of interest.</p>
+      </div>
+      <div class="v2-grid">
+        <div class="panel panel-pad">
+          <div class="panel-title"><i class="ti ti-affiliate"></i> Co-authorship &amp; citation graph</div>
+          <div class="graph-wrap"><svg id="graph" viewBox="0 0 560 430" width="100%" height="100%"></svg></div>
+          <div class="legend">
+            <span><span class="ldot" style="background:var(--primary)"></span> Submitting authors</span>
+            <span><span class="ldot" style="background:var(--red)"></span> Blocked (≤2 hops)</span>
+            <span><span class="ldot" style="background:var(--green)"></span> Eligible reviewers</span>
+            <span><span class="ldot" style="background:var(--ink3)"></span> Co-authors</span>
+          </div>
+        </div>
+        <div>
+          <div class="panel panel-pad">
+            <div class="panel-title"><i class="ti ti-shield-check"></i> Conflict-of-interest check</div>
+            <div class="algo-row">
+              <div class="algo-ico algo-ok"><i class="ti ti-check"></i></div>
+              <div class="algo-txt"><b>Co-author distance scan</b><span>Analysing co-author / citation graph. 6 potential reviewers within 2 hops flagged in red.</span></div>
+            </div>
+            <div class="algo-row">
+              <div class="algo-ico algo-ok"><i class="ti ti-check"></i></div>
+              <div class="algo-txt"><b>Institutional affiliation match</b><span>No eligible reviewer shares an affiliation with the submitting authors.</span></div>
+            </div>
+            <div class="algo-row">
+              <div class="algo-ico algo-run"><i class="ti ti-loader"></i></div>
+              <div class="algo-txt"><b>ORCID verification</b><span>Both authors verified via ORCID with ≥ 1 prior publication.</span></div>
+            </div>
+            <div class="verdict">
+              <i class="ti ti-circle-check"></i>
+              <div><b>Conflict of interest check passed</b><span>14 eligible reviewers identified · ready for open review</span></div>
+            </div>
+          </div>
+          <div class="panel panel-pad" style="margin-top:18px">
+            <div class="panel-title"><i class="ti ti-tags"></i> Topic &amp; funding keywords</div>
+            <div class="field-label">Request keywords</div>
+            <div class="kw">
+              <span class="chip chip-disc">machine learning</span>
+              <span class="chip chip-disc">low-resource NLP</span>
+              <span class="chip chip-disc">manifold learning</span>
+            </div>
+            <div class="field-label">Funding disclosure</div>
+            <div class="kw">
+              <span class="chip chip-urg">ERC Starting Grant</span>
+              <span class="chip chip-urg">no industry funding</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 3: REVIEW WORKSPACE ================= -->
+  <section class="view" id="view-review">
+    <div class="page">
+      <div class="page-head">
+        <h1>Review Workspace</h1>
+        <p>Read the manuscript and the community review hub side by side. Vote on comment relevance and resolve mandatory items.</p>
+      </div>
+      <div class="v3">
+        <div class="ms-pane">
+          <div class="ms-toolbar">
+            <i class="ti ti-arrow-left"></i><i class="ti ti-arrow-right"></i>
+            <span style="font-weight:600;color:var(--ink)">Manuscript viewer</span>
+            <i class="ti ti-zoom-in sp"></i><i class="ti ti-download"></i>
+            <span class="chip chip-rev" style="margin-left:6px"><i class="ti ti-eye"></i> In-line comments</span>
+          </div>
+          <div class="ms-body">
+            <h2>Neural Manifold Learning for Low-Resource Machine Translation</h2>
+            <div class="ms-auth">A. Santomauro · E. Simoni · J. Hassel</div>
+            <div class="ms-affil">Department of Computer Science · University of Eastern Piedmont</div>
+            <div class="ms-h">Abstract</div>
+            <p>We present a manifold-aligned encoder that improves translation quality for low-resource language pairs without relying on parallel corpora. By projecting source and target embeddings onto a <span class="hl" data-c="c1">shared latent manifold</span>, the model exploits geometric structure to bootstrap alignment from monolingual data alone.</p>
+            <div class="ms-h">1 · Introduction</div>
+            <p>Neural machine translation has achieved remarkable results on high-resource pairs, yet performance degrades sharply when parallel data is scarce. Prior work addresses this with back-translation and transfer learning, but these methods <span class="hl" data-c="c2">assume access to a related high-resource pair</span>, which is often unavailable for genuinely under-served languages.</p>
+            <p>Our contribution is threefold. First, we formalise the alignment problem as manifold matching. Second, we introduce a curvature-regularised objective. Third, we report a 4.2 BLEU improvement averaged across eight low-resource pairs.</p>
+            <div class="ms-h">2 · Method</div>
+            <p>Let the source and target embedding spaces be sampled from two Riemannian manifolds. We estimate a diffeomorphism between them by minimising a transport cost regularised by local curvature, encouraging neighbourhood-preserving alignment across languages.</p>
+          </div>
+        </div>
+        <div class="review-pane">
+          <div class="rp-head"><i class="ti ti-messages"></i><b>Review Hub</b><i class="ti ti-x x"></i></div>
+          <div class="score-box">
+            <div class="score-top">
+              <span class="score-num">4.2</span><span class="score-of">/ 5.0</span>
+              <span class="score-votes">Community score · 3 votes</span>
+            </div>
+            <div class="bars" id="bars"></div>
+          </div>
+          <div class="rp-scroll" id="comments"></div>
+          <div class="rp-foot">
+            <span class="countdown"><i class="ti ti-clock"></i> Review ends in 3 days 12 h</span>
+            <button class="btn-primary">Submit review</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 4: PROFILE & KARMA ================= -->
+  <section class="view" id="view-profile">
+    <div class="page">
+      <div class="page-head">
+        <h1>Author Profile &amp; Academic Karma</h1>
+        <p>Reputation reflects review quality and contribution — not just publication count.</p>
+      </div>
+      <div class="panel panel-pad" style="margin-bottom:22px">
+        <div style="display:flex;gap:26px;align-items:center;flex-wrap:wrap">
+          <div class="profile-head" style="flex:1;min-width:340px">
+            <div class="pf-avatar">AS</div>
+            <div>
+              <div class="pf-name">Dr. Alisha Sharma</div>
+              <div class="pf-verify"><i class="ti ti-rosette-discount-check"></i> Verified via ORCID</div>
+              <div class="pf-bio">Computational biologist working on community-driven peer review, scientific reproducibility, and open-science incentives. Active reviewer across biology and bioinformatics.</div>
+            </div>
+          </div>
+          <div class="gauge-wrap">
+            <div class="gauge">
+              <svg viewBox="0 0 120 120" width="150" height="150">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#eef2f7" stroke-width="11"/>
+                <circle id="gaugeArc" cx="60" cy="60" r="50" fill="none" stroke="var(--primary)" stroke-width="11"
+                  stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)"/>
+              </svg>
+              <div class="gauge-label"><span class="gauge-num">85</span><span class="gauge-of">/ 100</span></div>
+            </div>
+            <div class="gauge-cap">Academic Karma</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v4-grid">
+        <div>
+          <div class="panel panel-pad">
+            <div class="panel-title"><i class="ti ti-chart-bar"></i> Contributions</div>
+            <div class="stat-grid">
+              <div class="stat"><div class="stat-num">3</div><div class="stat-lab">Papers published (DOI)</div></div>
+              <div class="stat"><div class="stat-num">450</div><div class="stat-lab">Total citations</div></div>
+              <div class="stat"><div class="stat-num">21</div><div class="stat-lab">Community reviews · 4.5 avg</div></div>
+            </div>
+            <div style="margin-top:30px;font-size:12px;font-weight:600;color:var(--ink2)">Reviews per year</div>
+            <div class="chartbars" id="chartbars"></div>
+            <div style="height:18px"></div>
+          </div>
+          <div class="panel panel-pad mt22">
+            <div class="panel-title"><i class="ti ti-medal"></i> Badges earned</div>
+            <div class="badge-row">
+              <div class="badge gold"><i class="ti ti-trophy"></i> Top Reviewer ’25</div>
+              <div class="badge blue"><i class="ti ti-bolt"></i> Fast Responder</div>
+              <div class="badge purple"><i class="ti ti-eye-check"></i> Thorough Critic</div>
+              <div class="badge green"><i class="ti ti-seeding"></i> Mentor</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel panel-pad">
+            <div class="panel-title"><i class="ti ti-progress-alert"></i> Review debt tracker</div>
+            <div class="debt">
+              <svg class="debt-ring" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="24" fill="none" stroke="#eef2f7" stroke-width="7"/>
+                <circle cx="30" cy="30" r="24" fill="none" stroke="var(--amber)" stroke-width="7" stroke-linecap="round"
+                  stroke-dasharray="150.8" stroke-dashoffset="50" transform="rotate(-90 30 30)"/>
+              </svg>
+              <div class="debt-txt">
+                <b>1 review to unlock your next submission</b>
+                <span>You’ve reviewed 2 of 3 papers required this cycle. Reviewing keeps the platform free and balanced.</span>
+              </div>
+            </div>
+            <button class="btn-primary" style="margin:18px 0 0;width:100%" onclick="go('review')">Find a paper to review →</button>
+          </div>
+          <div class="panel panel-pad mt22">
+            <div class="panel-title"><i class="ti ti-history"></i> Recent karma events</div>
+            <div id="xpFeed"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ---------- navigation ---------- */
+function go(v){
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('#topnav .t').forEach(t=>t.classList.toggle('active',t.dataset.v===v));
+  window.scrollTo(0,0);
+  if(v==='profile')animateProfile();
+  if(v==='submit')drawGraph();
+}
+document.querySelectorAll('#topnav .t').forEach(t=>t.onclick=()=>go(t.dataset.v));
+
+/* ---------- view 1: dashboard ---------- */
+const papers=[
+ {status:"pub",disc:"Computer Science",title:"Neural Manifold Learning for Low-Resource Translation",authors:"A. Santomauro, E. Simoni, J. Hassel",abstract:"A manifold-aligned encoder improves BLEU by 4.2 points on low-resource language pairs without parallel corpora.",score:"4.6",reviews:"5",age:"published 2 mo ago"},
+ {status:"rev",disc:"Biology",title:"Mitochondrial Dynamics Under Metabolic Stress in Yeast",authors:"R. Okafor, L. Vance",abstract:"Time-lapse imaging reveals a previously uncharacterised fission–fusion cycle triggered by glucose starvation.",score:"4.1",reviews:"3",age:"4d left",urg:"2 days left"},
+ {status:"rev",disc:"Physics",title:"Precision Constraints on Axion–Photon Coupling",authors:"M. Cho, D. Reuben, S. Park",abstract:"A reanalysis of cavity-resonator data tightens the exclusion bound on the axion mass window between 2–40 μeV.",score:"3.8",reviews:"2",age:"1d left",urg:"urgent",hot:true},
+ {status:"pub",disc:"Neuroscience",title:"Replay Sequences Predict Spatial Decision Errors",authors:"T. Bergström, N. Idris",abstract:"Hippocampal replay during rest correlates with later navigation mistakes, suggesting a predictive role.",score:"4.8",reviews:"6",age:"published 5 mo ago"},
+ {status:"rev",disc:"Climate Science",title:"Aerosol Forcing Revisited in Coupled GCMs",authors:"P. Anand, K. Møller",abstract:"Ensemble runs show aerosol indirect effects have been systematically underestimated in CMIP-class models.",score:"3.9",reviews:"2",age:"6d left"},
+ {status:"pub",disc:"Mathematics",title:"A Combinatorial Bound for Sparse Expander Graphs",authors:"H. Lindqvist",abstract:"We prove a tighter spectral-gap bound for d-regular expanders, resolving a conjecture open since 2019.",score:"4.4",reviews:"4",age:"published 3 wk ago"},
+];
+const chipMap={pub:['chip-pub','ti-circle-check','Published'],rev:['chip-rev','ti-eye','Under Review'],draft:['chip-draft','ti-pencil','Draft']};
+function renderGrid(filter){
+  const list=filter==='all'?papers:papers.filter(p=>p.status===filter||(filter==='rev'&&p.status==='rev'));
+  document.getElementById('grid').innerHTML=(filter==='all'?papers:papers.filter(p=>p.status===(filter==='rev'?'rev':'pub'))).map(p=>{
+    const[cl,ic,lb]=chipMap[p.status];
+    const urg=p.urg?`<span class="chip chip-urg ${p.hot?'hot':''}"><i class="ti ti-clock"></i> ${p.urg}</span>`:'';
+    return `<article class="card">
+      <div class="card-top"><span class="chip ${cl}"><i class="ti ${ic}"></i> ${lb}</span>${urg}</div>
+      <span class="chip chip-disc card-disc">${p.disc}</span>
+      <div class="card-title">${p.title}</div>
+      <div class="card-auth">${p.authors}</div>
+      <div class="card-abs">${p.abstract}</div>
+      <div class="card-foot">
+        <span class="metric"><i class="ti ti-star star"></i> ${p.score}</span>
+        <span class="metric"><i class="ti ti-messages"></i> ${p.reviews} reviews</span>
+        <span class="card-age">${p.age}</span>
+      </div></article>`;
+  }).join('');
+}
+renderGrid('all');
+document.querySelectorAll('#dashTabs .tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('#dashTabs .tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');renderGrid(t.dataset.f);
+});
+const discs=[["Computer Science",1],["Physics",0],["Biology",1],["Mathematics",0],["Neuroscience",0],["Climate Science",0],["Economics",0]];
+document.getElementById('discList').innerHTML=discs.map((d,i)=>
+  `<label class="check ${d[1]?'on':''}" data-i="${i}"><span class="box"><i class="ti ti-check"></i></span> ${d[0]}</label>`).join('');
+document.querySelectorAll('#discList .check').forEach(c=>c.onclick=()=>c.classList.toggle('on'));
+
+/* ---------- view 2: graph ---------- */
+function drawGraph(){
+  const svg=document.getElementById('graph');
+  if(svg.dataset.done)return; svg.dataset.done="1";
+  const nodes=[
+    {id:'A',x:230,y:200,t:'author',l:'Author A'},
+    {id:'B',x:330,y:230,t:'author',l:'Author B'},
+    {id:'c1',x:130,y:120,t:'block',l:'Co-author'},
+    {id:'c2',x:150,y:290,t:'block',l:'Co-author'},
+    {id:'c3',x:430,y:150,t:'block',l:'Co-author'},
+    {id:'c4',x:440,y:300,t:'block',l:'Co-author'},
+    {id:'c5',x:70,y:200,t:'block',l:'2-hop'},
+    {id:'c6',x:330,y:90,t:'block',l:'2-hop'},
+    {id:'e1',x:120,y:380,t:'elig',l:'Eligible'},
+    {id:'e2',x:300,y:380,t:'elig',l:'Eligible'},
+    {id:'e3',x:470,y:400,t:'elig',l:'Eligible'},
+    {id:'e4',x:500,y:230,t:'elig',l:'Eligible'},
+  ];
+  const edges=[['A','B'],['A','c1'],['A','c2'],['A','c5'],['B','c3'],['B','c4'],['B','c6'],['c1','c5'],['c3','c6']];
+  const pos=Object.fromEntries(nodes.map(n=>[n.id,n]));
+  const col={author:'#1e4fcd',block:'#d23b3b',elig:'#0f9d58'};
+  let h='';
+  edges.forEach(e=>{const a=pos[e[0]],b=pos[e[1]];
+    h+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#cdd5e3" stroke-width="1.6"/>`});
+  nodes.forEach((n,i)=>{
+    const r=n.t==='author'?17:11;
+    h+=`<g opacity="0" style="animation:fadeIn .4s ease ${i*60}ms forwards">
+      <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${col[n.t]}" stroke="#fff" stroke-width="2.5"/>
+      <text x="${n.x}" y="${n.y+r+13}" text-anchor="middle" font-size="10.5" fill="#475569" font-family="Public Sans">${n.l}</text>
+    </g>`;});
+  svg.innerHTML=`<style>@keyframes fadeIn{to{opacity:1}}</style>`+h;
+}
+
+/* ---------- view 3: review hub ---------- */
+const bars=[[5,55],[4,30],[3,10],[2,5],[1,0]];
+document.getElementById('bars').innerHTML=bars.map(b=>
+  `<div class="bar-row"><span>${b[0]}★</span><div class="bar-track"><div class="bar-fill" style="width:${b[1]}%"></div></div></div>`).join('');
+const comments=[
+  {type:'mand',status:'resolved',body:'Clarify the role of the curvature regulariser in Section 2 — in the present form, the diffeomorphism estimate is under-specified.',up:7,down:1,res:true},
+  {type:'mand',status:'open',body:'Statistical significance of the 4.2 BLEU gain is not reported. Please add confidence intervals across the eight language pairs.',up:5,down:0,res:false},
+  {type:'sugg',status:'open',body:'Consider citing recent optimal-transport alignment work; the related-work section understates prior geometric approaches.',up:3,down:2,res:false},
+  {type:'sugg',status:'open',body:'A qualitative example of an aligned manifold neighbourhood would help readers build intuition.',up:4,down:0,res:false},
+];
+function renderComments(){
+  document.getElementById('comments').innerHTML=
+    `<div class="rsec"><i class="ti ti-alert-triangle" style="color:var(--red)"></i> Mandatory modifications</div>`+
+    comments.filter(c=>c.type==='mand').map((c,i)=>commentHTML(c,'m'+i)).join('')+
+    `<div class="rsec"><i class="ti ti-bulb" style="color:var(--amber)"></i> Suggested modifications</div>`+
+    comments.filter(c=>c.type==='sugg').map((c,i)=>commentHTML(c,'s'+i)).join('');
+  bindComments();
+}
+function commentHTML(c,id){
+  const st=c.res?`<span class="c-status resolved"><i class="ti ti-circle-check"></i> Resolved</span>`
+                 :`<span class="c-status open"><i class="ti ti-circle-dot"></i> Open</span>`;
+  const badge=c.type==='mand'?`<span class="c-badge mand">Mandatory</span>`:`<span class="c-badge sugg">Suggested</span>`;
+  const tog=c.type==='mand'?`<div class="toggle ${c.res?'on':''}" data-id="${id}"><span>Fixed</span><span class="sw"></span></div>`
+                           :`<span style="margin-left:auto;font-size:11.5px;color:var(--ink3)">flag irrelevant</span>`;
+  return `<div class="comment ${c.type}" data-id="${id}">
+    <div class="c-head">${badge}${st}</div>
+    <div class="c-body">${c.body}</div>
+    <div class="c-foot">
+      <span class="vote up" data-id="${id}"><i class="ti ti-arrow-up"></i> <b>${c.up}</b></span>
+      <span class="vote down" data-id="${id}"><i class="ti ti-arrow-down"></i> <b>${c.down}</b></span>
+      ${tog}
+    </div></div>`;
+}
+function bindComments(){
+  document.querySelectorAll('.vote.up').forEach(v=>v.onclick=()=>{const b=v.querySelector('b');b.textContent=+b.textContent+(v.classList.contains('active')?-1:1);v.classList.toggle('active');});
+  document.querySelectorAll('.vote.down').forEach(v=>v.onclick=()=>{const b=v.querySelector('b');b.textContent=+b.textContent+(v.classList.contains('active')?-1:1);v.classList.toggle('active');});
+  document.querySelectorAll('.toggle').forEach(t=>t.onclick=()=>{
+    t.classList.toggle('on');
+    const card=document.querySelector('.comment[data-id="'+t.dataset.id+'"] .c-status');
+    if(t.classList.contains('on')){card.className='c-status resolved';card.innerHTML='<i class="ti ti-circle-check"></i> Resolved';}
+    else{card.className='c-status open';card.innerHTML='<i class="ti ti-circle-dot"></i> Open';}
+  });
+}
+renderComments();
+
+/* ---------- view 4: profile ---------- */
+const reviewsByYear=[[2021,4],[2022,9],[2023,14],[2024,18],[2025,21]];
+function animateProfile(){
+  const arc=document.getElementById('gaugeArc');
+  arc.style.transition='none';arc.style.strokeDashoffset='314';
+  requestAnimationFrame(()=>{arc.style.transition='stroke-dashoffset 1.1s ease';arc.style.strokeDashoffset=314-314*0.85;});
+  const max=Math.max(...reviewsByYear.map(r=>r[1]));
+  document.getElementById('chartbars').innerHTML=reviewsByYear.map(r=>
+    `<div class="cbar" style="height:0" data-h="${Math.round(r[1]/max*100)}"><span>${r[0]}</span></div>`).join('');
+  setTimeout(()=>document.querySelectorAll('#chartbars .cbar').forEach(b=>b.style.height=b.dataset.h+'%'),60);
+}
+const xp=[
+  {ic:'ti-pencil',t:'Wrote a review · Aerosol Forcing',amt:'+20'},
+  {ic:'ti-arrow-up',t:'Review comment upvoted',amt:'+10'},
+  {ic:'ti-bolt',t:'Reviewed within 48h · speed bonus',amt:'+10'},
+  {ic:'ti-circle-check',t:'Reviewed a paper that got accepted',amt:'+15'},
+  {ic:'ti-trophy',t:'Paper accepted · Manifold Learning',amt:'+50'},
+];
+document.getElementById('xpFeed').innerHTML=xp.map(e=>
+  `<div class="xp-row"><span class="xp-ico"><i class="ti ${e.ic}"></i></span><span>${e.t}</span><span class="xp-amt pos">${e.amt} XP</span></div>`).join('');
+</script>
+</body>
+</html>
