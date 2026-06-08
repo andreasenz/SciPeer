@@ -7,8 +7,8 @@ Move to **Done** with a completion date when finished.
 
 ## Planned
 
-- [ ] Initialise GitHub repository and push initial commit
-- [ ] Scaffold backend project (FastAPI, module structure, Alembic)
+- [x] 2026-06-08 — Initialise GitHub repository and push initial commit
+- [x] 2026-06-08 — Scaffold backend project (FastAPI, module structure, Alembic)
 - [ ] Scaffold frontend project (Next.js 15)
 - [ ] Docker Compose for local development
 - [ ] ORCID OAuth2 integration (`identity` module)
