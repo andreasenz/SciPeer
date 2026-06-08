@@ -94,19 +94,21 @@ def upgrade() -> None:
         schema="reviews",
     )
 
-    # ── reviews.scores (partitioned) ─────────────────────────────────────────
-    op.execute("""
-        CREATE TABLE reviews.scores (
-            id UUID NOT NULL,
-            submission_id UUID NOT NULL REFERENCES papers.submissions(id),
-            reviewer_id UUID NOT NULL REFERENCES identity.users(id),
-            raw_score SMALLINT NOT NULL CHECK (raw_score >= 0 AND raw_score <= 5),
-            submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            PRIMARY KEY (id),
-            UNIQUE (submission_id, reviewer_id)
-        ) PARTITION BY RANGE (id)
-    """)
-    op.execute("CREATE TABLE reviews.scores_default PARTITION OF reviews.scores DEFAULT")
+    # ── reviews.scores ────────────────────────────────────────────────────────
+    # Not partitioned: UNIQUE (submission_id, reviewer_id) cannot coexist with
+    # PARTITION BY RANGE (id) unless id is also in the constraint, which would
+    # make it semantically useless. Regular table is correct at MVP scale.
+    op.create_table(
+        "scores",
+        sa.Column("id", sa.UUID(), primary_key=True),
+        sa.Column("submission_id", sa.UUID(), sa.ForeignKey("papers.submissions.id"), nullable=False),
+        sa.Column("reviewer_id", sa.UUID(), sa.ForeignKey("identity.users.id"), nullable=False),
+        sa.Column("raw_score", sa.SmallInteger(), nullable=False),
+        sa.Column("submitted_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.CheckConstraint("raw_score >= 0 AND raw_score <= 5", name="ck_scores_raw_score"),
+        sa.UniqueConstraint("submission_id", "reviewer_id", name="uq_scores_one_per_reviewer"),
+        schema="reviews",
+    )
 
     op.create_table(
         "comments",

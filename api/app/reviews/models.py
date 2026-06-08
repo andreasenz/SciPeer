@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, SmallInteger, Text, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, SmallInteger, Text, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base, UUIDBase
@@ -26,7 +26,10 @@ class CoauthorEdge(Base):
 
 class ReviewScore(UUIDBase):
     __tablename__ = "scores"
-    __table_args__ = {"schema": "reviews"}
+    __table_args__ = (
+        UniqueConstraint("submission_id", "reviewer_id", name="uq_scores_one_per_reviewer"),
+        {"schema": "reviews"},
+    )
 
     submission_id: Mapped[UUID] = mapped_column(ForeignKey("papers.submissions.id"), nullable=False)
     reviewer_id: Mapped[UUID] = mapped_column(ForeignKey("identity.users.id"), nullable=False)
