@@ -255,6 +255,10 @@ async def seed() -> None:
         ).scalars().all()
 
         for real_user in real_users:
+            # Only the designated test account gets the COI edge; other real users
+            # (e.g. collaborators logging in for the first time) review freely.
+            if real_user.email != "andrea.santomauro@uniupo.it":
+                continue
             for x, y in ((real_user.id, seed_0.id), (seed_0.id, real_user.id)):
                 exists = (
                     await session.execute(
@@ -294,6 +298,8 @@ async def ensure_coi_for_real_user(user_id: UUID) -> None:
             await session.execute(select(User).where(User.id == user_id))
         ).scalar_one_or_none()
         if user is None or user.orcid_id in set(SEED_ORCID_IDS) or user.id == seed_0.id:
+            return
+        if user.email != "andrea.santomauro@uniupo.it":
             return
 
         changed = False
