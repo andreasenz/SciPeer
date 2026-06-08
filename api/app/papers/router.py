@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
+from app.core.config import settings
 from app.core.deps import CurrentUserID, DBSession, ReadDBSession
 from app.core import storage
 from app.papers import service
@@ -26,6 +27,11 @@ async def search_papers(q: str = "", status: str | None = None) -> dict:
 @router.get("", response_model=list[SubmissionOut])
 async def list_papers(session: ReadDBSession, status: str | None = None) -> list[SubmissionOut]:
     return [SubmissionOut.model_validate(p) for p in await service.list_submissions(session, status=status)]
+
+
+@router.get("/my", response_model=list[SubmissionOut])
+async def my_papers(user_id: CurrentUserID, session: ReadDBSession) -> list[SubmissionOut]:
+    return [SubmissionOut.model_validate(p) for p in await service.list_my_submissions(session, user_id)]
 
 
 @router.get("/{paper_id}", response_model=SubmissionOut)
@@ -80,6 +86,17 @@ async def upload_pdf(
     )
     updated = await service.update_pdf_url(session, paper_id, url)
     return SubmissionOut.model_validate(updated)
+
+
+@router.get("/{paper_id}/pdf-url")
+async def get_pdf_url(paper_id: UUID, session: ReadDBSession) -> dict:
+    paper = await service.get_submission(session, paper_id)
+    if paper is None or not paper.pdf_url:
+        raise HTTPException(status_code=404, detail="PDF not found")
+    prefix = f"{storage._public_endpoint()}/{settings.s3_bucket_papers}/"
+    key = paper.pdf_url.removeprefix(prefix)
+    url = storage.presigned_url_for_key(key, expires=3600)
+    return {"url": url}
 
 
 @router.post("/{paper_id}/submit", response_model=SubmissionOut)

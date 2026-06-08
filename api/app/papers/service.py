@@ -123,6 +123,16 @@ async def check_and_apply_acceptance(session: AsyncSession, submission_id: UUID)
         await transition_status(session, submission_id, new_status, actor_id=None)
 
 
+async def list_my_submissions(session: AsyncSession, user_id: UUID) -> list[Submission]:
+    result = await session.execute(
+        select(Submission)
+        .join(SubmissionAuthor, SubmissionAuthor.submission_id == Submission.id)
+        .where(SubmissionAuthor.user_id == user_id)
+        .order_by(Submission.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
 async def list_field_categories(session: AsyncSession) -> list[FieldCategory]:
     result = await session.execute(select(FieldCategory).order_by(FieldCategory.name))
     return list(result.scalars().all())

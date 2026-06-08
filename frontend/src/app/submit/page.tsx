@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   IconCheck,
   IconX,
@@ -9,36 +10,65 @@ import {
   IconCircleCheck,
   IconShieldCheck,
   IconAlertTriangle,
+  IconFile,
 } from '@tabler/icons-react'
 import Topbar from '@/components/layout/Topbar'
 import Sidebar from '@/components/layout/Sidebar'
 import Panel from '@/components/ui/Panel'
-
-const FIELDS = [
-  'Computer Science',
-  'Biology',
-  'Physics',
-  'Medicine',
-  'Mathematics',
-  'Chemistry',
-  'Environmental Science',
-  'Psychology',
-]
-
-const KEYWORDS = ['machine learning', 'transformer', 'NLP', 'attention']
+import { api } from '@/lib/api'
+import type { FieldCategory } from '@/lib/types'
 
 type COIStatus = 'idle' | 'running' | 'ok'
 
 export default function SubmitPage() {
+  const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
-  const [field, setField] = useState('')
+  const [fieldId, setFieldId] = useState('')
+  const [fields, setFields] = useState<FieldCategory[]>([])
+  const [file, setFile] = useState<File | null>(null)
+  const [dragOver, setDragOver] = useState(false)
   const [coiStatus, setCoiStatus] = useState<COIStatus>('idle')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    api.papers.fields().then(setFields).catch(() => {})
+  }, [])
+
+  function handleFile(f: File | null) {
+    if (f && f.type !== 'application/pdf') {
+      setError('Only PDF files are accepted')
+      return
+    }
+    setFile(f)
+    setError('')
+  }
 
   function runCOI() {
     if (!title) return
     setCoiStatus('running')
     setTimeout(() => setCoiStatus('ok'), 1800)
+  }
+
+  async function handleSubmit() {
+    if (!title.trim() || !abstract.trim() || !fieldId || !file) {
+      setError('Title, abstract, field, and PDF are required')
+      return
+    }
+    setError('')
+    setSubmitting(true)
+    try {
+      const paper = await api.papers.create({ title, abstract, field_category_id: fieldId })
+      await api.papers.uploadPdf(paper.id, file)
+      await api.papers.submit(paper.id)
+      router.push('/my-papers')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Submission failed')
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -83,8 +113,8 @@ export default function SubmitPage() {
 
                 <div className="field-label">Field Category *</div>
                 <select
-                  value={field}
-                  onChange={(e) => setField(e.target.value)}
+                  value={fieldId}
+                  onChange={(e) => setFieldId(e.target.value)}
                   style={{
                     width: '100%', border: '1.5px solid var(--border)', borderRadius: 9,
                     padding: '10px 13px', fontSize: 14, fontFamily: 'inherit', outline: 'none',
@@ -92,40 +122,68 @@ export default function SubmitPage() {
                   }}
                 >
                   <option value="">Select a field…</option>
-                  {FIELDS.map((f) => <option key={f}>{f}</option>)}
+                  {fields.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
                 </select>
-
-                <div className="field-label">Keywords</div>
-                <div className="kw">
-                  {KEYWORDS.map((k) => (
-                    <span key={k} className="chip chip-rev" style={{ cursor: 'pointer' }}>
-                      {k} <IconX size={11} />
-                    </span>
-                  ))}
-                  <span className="chip chip-draft" style={{ cursor: 'pointer' }}>+ Add</span>
-                </div>
               </Panel>
 
               <Panel>
                 <div className="panel-title">Upload PDF *</div>
-                <div className="upload">
-                  <IconUpload />
-                  <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>Drop PDF here or click to browse</div>
-                  <div style={{ fontSize: 12 }}>Max 30 MB · PDF required · source optional</div>
-                </div>
-                <div style={{ marginTop: 12, display: 'flex', gap: 10 }}>
-                  <div className="upload" style={{ flex: 1, padding: 14 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>LaTeX / Source</div>
-                    <div style={{ fontSize: 11, marginTop: 2 }}>Optional</div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                />
+                {file ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 0' }}>
+                    <IconFile size={22} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: 'var(--ink)', flex: 1, wordBreak: 'break-all' }}>{file.name}</span>
+                    <button
+                      onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink3)', padding: 4 }}
+                    >
+                      <IconX size={16} />
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div
+                    className="upload"
+                    style={{ borderColor: dragOver ? 'var(--primary)' : undefined, cursor: 'pointer' }}
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setDragOver(false)
+                      handleFile(e.dataTransfer.files?.[0] ?? null)
+                    }}
+                  >
+                    <IconUpload />
+                    <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>Drop PDF here or click to browse</div>
+                    <div style={{ fontSize: 12 }}>Max 30 MB · PDF required</div>
+                  </div>
+                )}
               </Panel>
+
+              {error && (
+                <div style={{ color: 'var(--red)', fontSize: 13, padding: '8px 12px', background: '#fef2f2', borderRadius: 8, border: '1px solid #fecaca' }}>
+                  {error}
+                </div>
+              )}
 
               <button
                 className="btn-primary"
-                style={{ alignSelf: 'flex-start', padding: '12px 28px', fontSize: 14, borderRadius: 10 }}
+                style={{ alignSelf: 'flex-start', padding: '12px 28px', fontSize: 14, borderRadius: 10, opacity: submitting ? 0.6 : 1 }}
+                onClick={handleSubmit}
+                disabled={submitting}
               >
-                Submit for Review
+                {submitting ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <IconLoader size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                    Submitting…
+                  </span>
+                ) : 'Submit for Review'}
               </button>
             </div>
 
@@ -151,7 +209,7 @@ export default function SubmitPage() {
                   {coiStatus === 'ok' && (
                     <div style={{ textAlign: 'center', color: 'var(--green)', fontSize: 13 }}>
                       <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-                      Graph verified — 47 eligible reviewers found
+                      Graph verified — eligible reviewers found
                     </div>
                   )}
                 </div>
@@ -201,7 +259,7 @@ export default function SubmitPage() {
                     <IconCircleCheck size={24} />
                     <div>
                       <b>No conflicts found</b>
-                      <span>Eligible reviewer pool: 47 researchers</span>
+                      <span>Eligible reviewer pool ready</span>
                     </div>
                   </div>
                 )}

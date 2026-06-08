@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
@@ -9,6 +11,7 @@ from app.identity import service
 from app.identity.models import User
 from app.identity.schemas import OrcidCallbackIn, RefreshIn, TokenOut, UserOut
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -28,8 +31,9 @@ async def orcid_login() -> RedirectResponse:
 async def orcid_callback(payload: OrcidCallbackIn, session: DBSession) -> TokenOut:
     try:
         token_data = await service.exchange_orcid_code(payload.code)
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ORCID exchange failed")
+    except Exception as exc:
+        logger.warning("ORCID code exchange failed: %s", exc)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"ORCID exchange failed: {exc}")
 
     orcid_id: str = token_data.get("orcid", "")
     display_name: str = token_data.get("name", "")

@@ -5,6 +5,17 @@ Move to **Done** with a completion date when finished.
 
 ---
 
+## Bugfixes
+
+- [x] 2026-06-08 — BUG-1: ORCID login gives credentials error — surface real error, add startup warning, document sandbox setup
+- [x] 2026-06-08 — BUG-2: Cannot upload PDFs — wire file input + FormData in submit page, add uploadPdf/submit to api.ts, fix MinIO public URL (S3_PUBLIC_ENDPOINT_URL)
+- [x] 2026-06-08 — BUG-3: Review page left panel shows actual PDF via MinIO presigned URL in iframe
+- [x] 2026-06-08 — BUG-4: Review page gates submission on COI check; conflict/unauthenticated banners shown
+- [x] 2026-06-08 — BUG-5: Review submission UI: score selector + mandatory/suggested comment drafting with pending queue, real POST to backend
+- [x] 2026-06-08 — BUG-6: All pages load real data from backend (feed, my-papers, my-reviews); added GET /papers/my and GET /reviews/my endpoints
+
+---
+
 ## Planned
 
 - [ ] Kubernetes Helm charts

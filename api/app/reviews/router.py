@@ -33,6 +33,14 @@ async def coi_check(paper_id: UUID, reviewer_id: UUID, session: ReadDBSession) -
     return COICheckOut(has_conflict=conflict, candidate_reviewer_id=reviewer_id)
 
 
+# ── My reviews ───────────────────────────────────────────────────────────────
+
+@router.get("/my", response_model=list[ScoreOut])
+async def my_reviews(user_id: CurrentUserID, session: ReadDBSession) -> list[ScoreOut]:
+    scores = await service.get_scores_by_reviewer(session, user_id)
+    return [ScoreOut.model_validate(s) for s in scores]
+
+
 # ── Scores ────────────────────────────────────────────────────────────────────
 
 @router.get("/{paper_id}/scores", response_model=list[ScoreOut])

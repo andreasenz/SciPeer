@@ -18,6 +18,11 @@ logger = logging.getLogger(__name__)
 
 
 async def _startup() -> None:
+    if not settings.orcid_client_id or not settings.orcid_client_secret:
+        logger.warning(
+            "ORCID_CLIENT_ID / ORCID_CLIENT_SECRET not set — login will fail. "
+            "Register a sandbox app at https://sandbox.orcid.org/developer-tools"
+        )
     from app.core.storage import ensure_buckets
     from app.core.search import ensure_index
     try:

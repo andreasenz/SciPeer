@@ -169,3 +169,12 @@ async def resolve_comment(
     await session.commit()
     await session.refresh(comment)
     return comment
+
+
+async def get_scores_by_reviewer(session: AsyncSession, reviewer_id: UUID) -> list[ReviewScore]:
+    result = await session.execute(
+        select(ReviewScore)
+        .where(ReviewScore.reviewer_id == reviewer_id)
+        .order_by(ReviewScore.submitted_at.desc())
+    )
+    return list(result.scalars().all())

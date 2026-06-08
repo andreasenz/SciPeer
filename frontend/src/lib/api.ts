@@ -38,15 +38,62 @@ export const api = {
   papers: {
     list: (status?: string) =>
       request<import('./types').Paper[]>(`/api/v1/papers${status ? `?status=${status}` : ''}`),
+    my: () => request<import('./types').Paper[]>('/api/v1/papers/my'),
     get: (id: string) => request<import('./types').Paper>(`/api/v1/papers/${id}`),
     create: (body: { title: string; abstract: string; field_category_id: string }) =>
       request<import('./types').Paper>('/api/v1/papers', { method: 'POST', body: JSON.stringify(body) }),
+    uploadPdf: (paperId: string, file: File): Promise<import('./types').Paper> => {
+      const form = new FormData()
+      form.append('file', file)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+      return fetch(`${API_BASE}/api/v1/papers/${paperId}/upload-pdf`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      }).then(r =>
+        r.ok
+          ? (r.json() as Promise<import('./types').Paper>)
+          : r.json().then(e => Promise.reject(new Error(e.detail ?? 'Upload failed')))
+      )
+    },
+    submit: (paperId: string) =>
+      request<import('./types').Paper>(`/api/v1/papers/${paperId}/submit`, { method: 'POST' }),
+    pdfUrl: (id: string) => request<{ url: string }>(`/api/v1/papers/${id}/pdf-url`),
     fields: () => request<import('./types').FieldCategory[]>('/api/v1/papers/fields'),
+    search: (q: string, status?: string) =>
+      request<{ hits: import('./types').Paper[] }>(
+        `/api/v1/papers/search?q=${encodeURIComponent(q)}${status ? `&status=${status}` : ''}`
+      ),
   },
 
   reviews: {
     coiCheck: (paperId: string, reviewerId: string) =>
       request<import('./types').COICheckResult>(`/api/v1/reviews/coi-check/${paperId}/${reviewerId}`),
+    my: () => request<import('./types').ReviewScore[]>('/api/v1/reviews/my'),
+    getScores: (paperId: string) =>
+      request<import('./types').ReviewScore[]>(`/api/v1/reviews/${paperId}/scores`),
+    getComments: (paperId: string) =>
+      request<import('./types').ReviewComment[]>(`/api/v1/reviews/${paperId}/comments`),
+    submitScore: (paperId: string, raw_score: number) =>
+      request<import('./types').ReviewScore>(`/api/v1/reviews/${paperId}/scores`, {
+        method: 'POST',
+        body: JSON.stringify({ raw_score }),
+      }),
+    addComment: (paperId: string, comment_type: 'mandatory' | 'suggested', body: string) =>
+      request<import('./types').ReviewComment>(`/api/v1/reviews/${paperId}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({ comment_type, body }),
+      }),
+    voteComment: (commentId: string, direction: 'up' | 'down') =>
+      request<import('./types').ReviewComment>(
+        `/api/v1/reviews/comments/${commentId}/vote?direction=${direction}`,
+        { method: 'PATCH' }
+      ),
+    resolveComment: (commentId: string) =>
+      request<import('./types').ReviewComment>(
+        `/api/v1/reviews/comments/${commentId}/resolve`,
+        { method: 'PATCH' }
+      ),
   },
 
   gamification: {

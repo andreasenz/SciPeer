@@ -22,6 +22,10 @@ def get_client():  # type: ignore[return]
     return _client
 
 
+def _public_endpoint() -> str:
+    return settings.s3_public_endpoint_url or settings.s3_endpoint_url
+
+
 def paper_key(paper_id: UUID, version: int, filename: str) -> str:
     return f"{paper_id}/v{version}/{filename}"
 
@@ -34,16 +38,22 @@ def upload_paper(paper_id: UUID, version: int, filename: str, fileobj: BinaryIO,
         key,
         ExtraArgs={"ContentType": content_type},
     )
-    return f"{settings.s3_endpoint_url}/{settings.s3_bucket_papers}/{key}"
+    return f"{_public_endpoint()}/{settings.s3_bucket_papers}/{key}"
 
 
-def presigned_url(paper_id: UUID, version: int, filename: str, expires: int = 3600) -> str:
-    key = paper_key(paper_id, version, filename)
-    return get_client().generate_presigned_url(
+def presigned_url_for_key(key: str, expires: int = 3600) -> str:
+    url = get_client().generate_presigned_url(
         "get_object",
         Params={"Bucket": settings.s3_bucket_papers, "Key": key},
         ExpiresIn=expires,
     )
+    # Rewrite internal Docker endpoint to public endpoint
+    return url.replace(settings.s3_endpoint_url, _public_endpoint())
+
+
+def presigned_url(paper_id: UUID, version: int, filename: str, expires: int = 3600) -> str:
+    key = paper_key(paper_id, version, filename)
+    return presigned_url_for_key(key, expires)
 
 
 def ensure_buckets() -> None:
